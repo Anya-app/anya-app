@@ -1,0 +1,26 @@
+{
+  "name": "KidPath",
+  "short_name": "KidPath",
+  "description": "บันทึกการเดินทางของลูก ครบในที่เดียว",
+  "start_url": "/th/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#7F77DD",
+  "orientation": "portrait",
+  "lang": "th",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

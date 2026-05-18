@@ -9,37 +9,56 @@ export const mockAppData: AppData = {
       createdAt: "2024-01-10T08:00:00Z",
       updatedAt: "2025-04-01T10:30:00Z",
       basicInfo: {
+        // ✅ NEW MULTI LANGUAGE
+        names: {
+          th: {
+            fullName: "ณิชาภา ฉันทวานิช",
+          },
+          en: {
+            fullName: "Nichapa Chanthavanij",
+          },
+          zh: {
+            fullName: "陈美英",
+          },
+        },
+
+        // OLD (ยังใช้ UI เดิม)
         name: "ณิชาภา",
         lastname: "ฉันทวานิช",
+
         saintName: "มารีอา",
         nickname: "อัญญ่า",
         dateOfBirth: "2016-10-13",
         placeOfBirth: "โรงพยาบาลพญาไท2 กรุงเทพฯ",
+
         motherName: "แววกมล ฉันทวานิช",
         fatherName: "กรวิชญ์ ฉันทวานิช",
-paternalGrandfather: {
-  name: "Vittaya Chanthavanij",
-  altNames: [{ value: "วิทยา ฉันทวานิช", language: "Thai" }],
-  status: "passed",
-},
-paternalGrandmother: {
-  name: "Sunida Chanthavanij",
-  altNames: [{ value: "สุนิดา ฉันทวานิช", language: "Thai" }],
-  status: "passed",
-},
-maternalGrandfather: {
-  name: "Nuttanun Suppaponsiri",
-  altNames: [{ value: "ณัฐนันต์ ศูภผลศิริ", language: "Thai" }],
-  status: "passed",
-},
-maternalGrandmother: {
-  name: "Piyaporn Rodtieng",
-  altNames: [{ value: "ปิยาภรณ์ รอดเที่ยง", language: "Thai" }],
-  status: "alive",
-},
+
+        paternalGrandfather: {
+          name: "Vittaya Chanthavanij",
+          altNames: [{ value: "วิทยา ฉันทวานิช", language: "Thai" }],
+          status: "passed",
+        },
+        paternalGrandmother: {
+          name: "Sunida Chanthavanij",
+          altNames: [{ value: "สุนิดา ฉันทวานิช", language: "Thai" }],
+          status: "passed",
+        },
+        maternalGrandfather: {
+          name: "Nuttanun Suppaponsiri",
+          altNames: [{ value: "ณัฐนันต์ ศูภผลศิริ", language: "Thai" }],
+          status: "passed",
+        },
+        maternalGrandmother: {
+          name: "Piyaporn Rodtieng",
+          altNames: [{ value: "ปิยาภรณ์ รอดเที่ยง", language: "Thai" }],
+          status: "alive",
+        },
+
         brother: [],
         sister: [],
       },
+
       health: {
         congenitalDisease: [],
         bodyMarks: [],
@@ -61,6 +80,7 @@ maternalGrandmother: {
           { date: "2025-01-01", weight: 28, height: 138 },
         ],
       },
+
       schoolRecords: [
         {
           id: "school-001-a",
@@ -108,6 +128,7 @@ maternalGrandmother: {
           yearlyNote: "นักเรียนมีความรับผิดชอบสูง ควรพัฒนาทักษะการนำเสนอ",
         },
       ],
+
       activities: [
         {
           id: "act-001-a",
@@ -118,14 +139,8 @@ maternalGrandmother: {
           role: "ผู้เข้าร่วม",
           note: "ได้รับเกียรติบัตรผ่านการอบรม",
         },
-        {
-          id: "act-001-b",
-          activityName: "ชุมนุมดนตรีสากล",
-          category: "ดนตรี",
-          date: "2025-05-20",
-          role: "นักดนตรี (เปียโน)",
-        },
       ],
+
       awards: [
         {
           id: "testaward-001-a",
@@ -137,174 +152,39 @@ maternalGrandmother: {
           note: "testระดับชั้นprimary",
         },
       ],
-      calendarEvents: [
-        {
-          id: "cal-001-a",
-          title: "สอบกลางภาค — คณิตศาสตร์",
-          date: "2025-09-10",
-          startTime: "09:00",
-          endTime: "11:00",
-          source: "school",
-          sourceId: "school-001-a",
-          color: "#4F46E5",
-        },
-        {
-          id: "cal-001-b",
-          title: "ทัศนศึกษาพิพิธภัณฑ์วิทยาศาสตร์",
-          date: "2025-07-20",
-          allDay: true,
-          source: "school",
-          sourceId: "school-001-a",
-          color: "#16A34A",
-        },
-        {
-          id: "cal-001-c",
-          title: "ค่ายวิทยาศาสตร์เยาวชน",
-          date: "2025-08-01",
-          endDate: "2025-08-03",
-          allDay: true,
-          source: "activity",
-          sourceId: "act-001-a",
-          color: "#EA580C",
-        },
-      ],
+
+      calendarEvents: [],
     },
+
     {
       id: "child-002",
       profilePhotoUrl: undefined,
       createdAt: "2024-03-20T09:00:00Z",
       updatedAt: "2025-05-01T08:00:00Z",
       basicInfo: {
+        // ✅ NEW
+        names: {
+          en: {
+            fullName: "Alice Golden",
+          },
+        },
+
         name: "Alice",
         lastname: "Golden",
         nickname: "Alice",
         dateOfBirth: "2017-11-08",
-        placeOfBirth: "test pet hostital",
+        placeOfBirth: "test pet hospital",
         motherName: "Golden re",
         fatherName: "Golder L",
         sister: [],
         brother: [],
       },
-      health: {
-        congenitalDisease: [],
-        bodyMarks: ["testแผลเป็นที่หัวเข่าขวา"],
-        measurements: {
-          weight: 22,
-          height: 118,
-          shoulder: 28,
-          upperArm: 17,
-          arm: 15,
-          chest: 58,
-          waistHip: 52,
-          leg: 60,
-          thighCircumference: 34,
-          shoeSize: 31,
-        },
-        growthTrack: [
-          { date: "2023-11-08", weight: 19, height: 112 },
-          { date: "2024-11-08", weight: 21, height: 116 },
-          { date: "2025-04-01", weight: 22, height: 118 },
-        ],
-      },
-      schoolRecords: [
-        {
-          id: "school-002-a",
-          showPresentYearFirst: true,
-          schoolLevel: "primary",
-          schoolName: "test petโรงเรียนอนุบาลสวนหลวง",
-          studentId: "68005678",
-          academicYear: "2568",
-          room: "Y2",
-          number: 5,
-          term: "1",
-          startDate: "2025-05-15",
-          endDate: "2025-10-10",
-          normalSchoolTime: { startTime: "08:00", endTime: "15:00" },
-          classPosition: [
-            { rank: 1, term: "2", academicYear: "2567", outOf: 30 },
-            { rank: 2, term: "1", academicYear: "2567", outOf: 30 },
-          ],
-          schoolPosition: [
-            { title: "ตัวแทนห้องเข้าแถว", startDate: "2025-05-15" },
-          ],
-          classSchedule: [
-            { day: "Mon", startTime: "08:30", endTime: "09:30", subject: "ภาษาไทย", teacher: "ครูจินตนา" },
-            { day: "Mon", startTime: "09:30", endTime: "10:30", subject: "คณิตศาสตร์", teacher: "ครูสมหญิง" },
-            { day: "Wed", startTime: "10:30", endTime: "11:30", subject: "ศิลปะ", teacher: "ครูมานะ" },
-          ],
-          examDates: [
-            { subject: "ภาษาไทย", date: "2025-09-15", startTime: "08:30", endTime: "10:00" },
-          ],
-          fieldTrips: [
-            { name: "ทัศนศึกษาสวนสัตว์", date: "2025-06-20", destination: "สวนสัตว์ดุสิต" },
-          ],
-          activities: [
-            { name: "วันภาษาไทยแห่งชาติ", date: "2025-07-29", description: "แสดงละครภาษาไทย", role: "นักแสดง" },
-          ],
-          grades: [
-            {
-              term: "2",
-              type: "final",
-              gpa: 4.0,
-              subjectScores: [
-                { subject: "ภาษาไทย", score: 95, maxScore: 100, grade: "A" },
-                { subject: "คณิตศาสตร์", score: 98, maxScore: 100, grade: "A" },
-                { subject: "ศิลปะ", score: 92, maxScore: 100, grade: "A" },
-              ],
-            },
-          ],
-          yearlyNote: "เด็กฉลาด กระตือรือร้น ชอบอ่านหนังสือนอกหลักสูตร",
-        },
-      ],
-      activities: [
-        {
-          id: "act-002-a",
-          activityName: "ฟุตบอลเยาวชน",
-          category: "กีฬา",
-          date: "2025-03-01",
-          role: "นักฟุตบอล",
-          note: "ฝึกซ้อมทุกเสาร์-อาทิตย์",
-        },
-      ],
-      awards: [
-        {
-          id: "award-002-a",
-          awardName: "รางวัลนักเรียนดีเด่นด้านคณิตศาสตร์",
-          category: "วิชาการ",
-          date: "2025-03-20",
-          organization: "โรงเรียนอนุบาลสวนหลวง",
-          level: "school",
-        },
-        {
-          id: "award-002-b",
-          awardName: "เหรียญทองการแข่งขันฟุตบอลเยาวชน",
-          category: "กีฬา",
-          date: "2024-12-10",
-          organization: "สมาคมฟุตบอลเยาวชนกรุงเทพฯ",
-          level: "district",
-        },
-      ],
-      calendarEvents: [
-        {
-          id: "cal-002-a",
-          title: "ทัศนศึกษาwater park",
-          date: "2025-06-20",
-          allDay: true,
-          source: "school",
-          sourceId: "school-002-a",
-          color: "#16A34A",
-        },
-        {
-          id: "cal-002-b",
-          title: "แข่งขันฟุตบอลเยาวชน",
-          date: "2025-06-07",
-          startTime: "09:00",
-          endTime: "12:00",
-          source: "activity",
-          sourceId: "act-002-a",
-          color: "#DC2626",
-        },
-      ],
+
+      health: {},
+      schoolRecords: [],
+      activities: [],
+      awards: [],
+      calendarEvents: [],
     },
   ],
 };

@@ -48,9 +48,11 @@ export function SectionLabel({
 export function InfoRow({
   label,
   value,
+  mono,
 }: {
   label: string;
   value?: React.ReactNode;
+  mono?: boolean;
 }) {
   return (
     <div

@@ -120,23 +120,6 @@ export function Pill({
     </span>
   );
 }
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "4px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 700,
-        background: bg,
-        color,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
 export function ScoreBar({
   value,
   max = 100,

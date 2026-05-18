@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 import { mockAppData } from "@/lib/data";
-import type { Child, Activity } from "@/types";
+import type { Activity, Child } from "@/types";
 import {
   Card,
   SectionLabel,
@@ -32,9 +33,24 @@ function makeEmptyActivity(): Activity {
     activityName: "",
     category: "",
     date: "",
+    endDate: "",
     role: "",
     note: "",
   };
+}
+
+function fmtDate(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function saveChild(childId: string, data: Child) {
+  localStorage.setItem(`child-${childId}`, JSON.stringify(data));
 }
 
 export default function ActivitiesPage({
@@ -47,59 +63,98 @@ export default function ActivitiesPage({
   );
 
   const [child, setChild] = useState<Child | undefined>(originalChild);
-  const [draft, setDraft] = useState<Child | undefined>(originalChild);
-  const [isEditing, setIsEditing] = useState(false);
+  const [draftActivity, setDraftActivity] = useState<Activity>(
+    makeEmptyActivity()
+  );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(`child-${params.childId}`);
     if (saved) {
       const parsed = JSON.parse(saved) as Child;
       setChild(parsed);
-      setDraft(parsed);
     }
   }, [params.childId]);
 
-  if (!child || !draft) {
+  if (!child) {
     return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  const activities = draft.activities ?? [];
-  const current = activities[0] ?? makeEmptyActivity();
+  const activities = [...(child.activities ?? [])].sort(
+    (a, b) => new Date(b.date || "1900-01-01").getTime() - new Date(a.date || "1900-01-01").getTime()
+  );
+
+  function openAddForm() {
+    setDraftActivity(makeEmptyActivity());
+    setEditingId(null);
+    setIsFormOpen(true);
+  }
+
+  function openEditForm(activity: Activity) {
+    setDraftActivity(activity);
+    setEditingId(activity.id);
+    setIsFormOpen(true);
+  }
+
+  function cancelForm() {
+    setDraftActivity(makeEmptyActivity());
+    setEditingId(null);
+    setIsFormOpen(false);
+  }
 
   function updateField(field: keyof Activity, value: string) {
-    setDraft((prev) => {
-      if (!prev) return prev;
-
-      const existing = prev.activities ?? [];
-      const base = existing[0] ?? makeEmptyActivity();
-
-      const updated: Activity = {
-        ...base,
-        [field]: value,
-      };
-
-      return {
-        ...prev,
-        updatedAt: new Date().toISOString(),
-        activities: [updated, ...existing.slice(1)],
-      };
-    });
+    setDraftActivity((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   }
 
-  function saveEdit() {
-    localStorage.setItem(`child-${params.childId}`, JSON.stringify(draft));
-    setChild(draft);
-    setIsEditing(false);
+  function saveActivity() {
+    if (!draftActivity.activityName.trim()) {
+      alert("Please enter activity name.");
+      return;
+    }
+
+    if (!draftActivity.date) {
+      alert("Please enter activity date.");
+      return;
+    }
+
+    const existing = child.activities ?? [];
+
+    const updatedActivities = editingId
+      ? existing.map((a) => (a.id === editingId ? draftActivity : a))
+      : [draftActivity, ...existing];
+
+    const updatedChild: Child = {
+      ...child,
+      updatedAt: new Date().toISOString(),
+      activities: updatedActivities,
+    };
+
+    setChild(updatedChild);
+    saveChild(params.childId, updatedChild);
+    cancelForm();
   }
 
-  function cancelEdit() {
-    setDraft(child);
-    setIsEditing(false);
+  function deleteActivity(id: string) {
+    const ok = confirm("Delete this activity?");
+    if (!ok) return;
+
+    const updatedChild: Child = {
+      ...child,
+      updatedAt: new Date().toISOString(),
+      activities: (child.activities ?? []).filter((a) => a.id !== id),
+    };
+
+    setChild(updatedChild);
+    saveChild(params.childId, updatedChild);
   }
 
-  function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file || !draft) return;
+    if (!file) return;
 
     const reader = new FileReader();
 
@@ -113,116 +168,158 @@ export default function ActivitiesPage({
         createdAt: new Date().toISOString(),
       };
 
-      const updated = {
-        ...draft,
+      const updatedChild: Child = {
+        ...child,
         updatedAt: new Date().toISOString(),
-        attachments: [...(draft.attachments || []), newAttachment],
+        attachments: [...(child.attachments || []), newAttachment],
       };
 
-      setDraft(updated);
-      setChild(updated);
-      localStorage.setItem(`child-${params.childId}`, JSON.stringify(updated));
+      setChild(updatedChild);
+      saveChild(params.childId, updatedChild);
     };
 
     reader.readAsDataURL(file);
   }
 
-  const list = child.activities ?? [];
+  function exportJson() {
+    const blob = new Blob([JSON.stringify(child, null, 2)], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${child.basicInfo?.name ?? "child"}-activities.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
-      
-      {/* HEADER */}
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <SectionLabel emoji="⭐" label="Activities" color="#7F77DD" bg="#EEEDFE" />
 
-          <div style={{ display: "flex", gap: 8 }}>
-            {!isEditing ? (
-              <button onClick={() => setIsEditing(true)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-                Edit
-              </button>
-            ) : (
-              <>
-                <button onClick={saveEdit} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-                  Save
-                </button>
-                <button onClick={cancelEdit} style={{ border: "1px solid #E5E7EB", background: "white", padding: "8px 12px", borderRadius: 999 }}>
-                  Cancel
-                </button>
-              </>
-            )}
-          </div>
+          <button onClick={openAddForm} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+            + Add
+          </button>
         </div>
 
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
             Upload Activity File
             <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
           </label>
+
+          <button onClick={exportJson} style={{ border: "1px solid #E5E7EB", background: "white", color: "#374151", padding: "8px 12px", borderRadius: 999 }}>
+            Export JSON
+          </button>
         </div>
       </Card>
 
-      {/* FORM */}
-      <Card>
-        <SectionLabel emoji="✏️" label="Add / Edit Activity" color="#7F77DD" bg="#EEEDFE" />
+      {isFormOpen && (
+        <Card>
+          <SectionLabel emoji="✏️" label={editingId ? "Edit Activity" : "Add Activity"} color="#7F77DD" bg="#EEEDFE" />
 
-        {!isEditing ? (
-          <>
-            <InfoRow label="Name" value={list[0]?.activityName} />
-            <InfoRow label="Category" value={list[0]?.category} />
-            <InfoRow label="Date" value={list[0]?.date} />
-            <InfoRow label="Role" value={list[0]?.role} />
-            <InfoRow label="Note" value={list[0]?.note} />
-          </>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
             <label style={labelStyle}>
               Activity Name
-              <input style={inputStyle} value={current.activityName} onChange={(e) => updateField("activityName", e.target.value)} />
+              <input style={inputStyle} value={draftActivity.activityName} onChange={(e) => updateField("activityName", e.target.value)} />
             </label>
 
             <label style={labelStyle}>
               Category
-              <input style={inputStyle} value={current.category ?? ""} onChange={(e) => updateField("category", e.target.value)} />
+              <input style={inputStyle} value={draftActivity.category ?? ""} onChange={(e) => updateField("category", e.target.value)} placeholder="กีฬา, ดนตรี, วิชาการ, ศิลปะ" />
             </label>
 
             <label style={labelStyle}>
               Date
-              <input type="date" style={inputStyle} value={current.date} onChange={(e) => updateField("date", e.target.value)} />
+              <input type="date" style={inputStyle} value={draftActivity.date} onChange={(e) => updateField("date", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              End Date
+              <input type="date" style={inputStyle} value={draftActivity.endDate ?? ""} onChange={(e) => updateField("endDate", e.target.value)} />
             </label>
 
             <label style={labelStyle}>
               Role
-              <input style={inputStyle} value={current.role ?? ""} onChange={(e) => updateField("role", e.target.value)} />
+              <input style={inputStyle} value={draftActivity.role ?? ""} onChange={(e) => updateField("role", e.target.value)} placeholder="Participant, Leader, Performer" />
             </label>
 
             <label style={labelStyle}>
               Note
-              <input style={inputStyle} value={current.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
+              <textarea style={{ ...inputStyle, minHeight: 80 }} value={draftActivity.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
             </label>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveActivity} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+                Save
+              </button>
+
+              <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+                Cancel
+              </button>
+            </div>
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
 
-      {/* LIST */}
       <Card>
-        <SectionLabel emoji="📋" label="Activity List" color="#1D9E75" bg="#E1F5EE" />
+        <SectionLabel emoji="📋" label="Activity Timeline" color="#1D9E75" bg="#E1F5EE" />
 
-        {list.length > 0 ? (
-          list.map((a) => (
-            <InfoRow
-              key={a.id}
-              label={a.activityName}
-              value={`${a.date} ${a.role ? "· " + a.role : ""}`}
-            />
+        {activities.length > 0 ? (
+          activities.map((a) => (
+            <div key={a.id} style={{ padding: "12px 14px", borderBottom: "0.5px solid #F1F5F9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800 }}>
+                    {a.activityName}
+                  </div>
+
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
+                    📅 {fmtDate(a.date)}
+                    {a.endDate ? ` → ${fmtDate(a.endDate)}` : ""}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                    {a.category && (
+                      <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 999, background: "#EEEDFE", color: "#7F77DD", fontWeight: 700 }}>
+                        {a.category}
+                      </span>
+                    )}
+
+                    {a.role && (
+                      <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 999, background: "#F8FAFC", color: "#6B7280", fontWeight: 700 }}>
+                        {a.role}
+                      </span>
+                    )}
+                  </div>
+
+                  {a.note && (
+                    <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8, lineHeight: 1.5 }}>
+                      {a.note}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <button onClick={() => openEditForm(a)} style={{ border: "1px solid #E5E7EB", background: "white", padding: "6px 10px", borderRadius: 999, fontSize: 12 }}>
+                    Edit
+                  </button>
+
+                  <button onClick={() => deleteActivity(a.id)} style={{ border: "none", background: "#FEE2E2", color: "#DC2626", padding: "6px 10px", borderRadius: 999, fontSize: 12 }}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
           ))
         ) : (
           <EmptyState emoji="⭐" message="No activities yet." />
         )}
       </Card>
 
-      {/* ATTACHMENTS */}
       <Card>
         <SectionLabel emoji="📎" label="Activity Attachments" color="#1D9E75" bg="#E1F5EE" />
 

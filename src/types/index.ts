@@ -10,7 +10,7 @@ export type CalendarEventSource = "school" | "activity" | "goal" | "other";
 export type LifeStatus = "alive" | "passed";
 
 // ============================================================
-// MULTI-LANGUAGE NAME / FAMILY MEMBER
+// MULTI-LANGUAGE NAME
 // ============================================================
 
 export interface LocalizedName {
@@ -19,29 +19,9 @@ export interface LocalizedName {
 }
 
 export interface MultiLanguageNames {
-  th?: {
-    firstName?: string;
-    lastName?: string;
-    fullName?: string;
-  };
-  en?: {
-    firstName?: string;
-    lastName?: string;
-    fullName?: string;
-  };
-  zh?: {
-    fullName?: string;
-  };
-  other?: Array<{
-    language: string;
-    fullName: string;
-  }>;
-}
-
-export interface FamilyMember {
-  name?: string;
-  altNames?: LocalizedName[];
-  status?: LifeStatus;
+  th?: { firstName?: string; lastName?: string; fullName?: string };
+  en?: { firstName?: string; lastName?: string; fullName?: string };
+  zh?: { fullName?: string };
 }
 
 // ============================================================
@@ -78,86 +58,11 @@ export interface Health {
 // SCHOOL
 // ============================================================
 
-export interface SubjectScore {
-  subject: string;
-  score: number;
-  maxScore: number;
-  grade?: string;
-}
-
-export interface TermGrade {
-  term: Term;
-  type: GradeType;
-  gpa?: number;
-  subjectScores?: SubjectScore[];
-}
-
-export interface ScheduleSlot {
-  day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
-  startTime: string;
-  endTime: string;
-  subject?: string;
-  teacher?: string;
-  room?: string;
-}
-
-export interface ExamDate {
-  subject: string;
-  date: string;
-  startTime?: string;
-  endTime?: string;
-  room?: string;
-}
-
-export interface FieldTrip {
-  name: string;
-  date: string;
-  destination?: string;
-  note?: string;
-}
-
-export interface SchoolActivity {
-  name: string;
-  date: string;
-  description?: string;
-  role?: string;
-}
-
-export interface ClassPosition {
-  rank: number;
-  term: Term;
-  academicYear: string;
-  outOf?: number;
-}
-
-export interface SchoolPosition {
-  title: string;
-  startDate: string;
-  endDate?: string;
-}
-
 export interface SchoolRecord {
   id: string;
-  showPresentYearFirst: boolean;
-  schoolLevel: SchoolLevel;
   schoolName: string;
-  studentId?: string;
   academicYear: string;
-  room?: string;
-  number?: number;
   term: Term;
-  startDate: string;
-  endDate?: string;
-  classPosition?: ClassPosition[];
-  schoolPosition?: SchoolPosition[];
-  classSchedule?: ScheduleSlot[];
-  normalSchoolTime?: { startTime: string; endTime: string };
-  activitySchoolTime?: { startTime: string; endTime: string };
-  examDates?: ExamDate[];
-  fieldTrips?: FieldTrip[];
-  activities?: SchoolActivity[];
-  grades?: TermGrade[];
-  yearlyNote?: string;
 }
 
 // ============================================================
@@ -167,11 +72,7 @@ export interface SchoolRecord {
 export interface Activity {
   id: string;
   activityName: string;
-  category?: string;
   date: string;
-  endDate?: string;
-  role?: string;
-  note?: string;
 }
 
 // ============================================================
@@ -181,11 +82,7 @@ export interface Activity {
 export interface Award {
   id: string;
   awardName: string;
-  category?: string;
   date: string;
-  organization?: string;
-  level?: AwardLevel;
-  note?: string;
 }
 
 // ============================================================
@@ -196,14 +93,7 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: string;
-  endDate?: string;
-  allDay?: boolean;
-  startTime?: string;
-  endTime?: string;
   source: CalendarEventSource;
-  sourceId?: string;
-  color?: string;
-  note?: string;
 }
 
 // ============================================================
@@ -215,25 +105,8 @@ export interface BasicInfo {
 
   name: string;
   lastname: string;
-  middleName?: string;
-  saintName?: string;
-  otherName?: string;
-  nickname?: string;
 
   dateOfBirth: string;
-  placeOfBirth?: string;
-
-  motherName?: string;
-  fatherName?: string;
-
-  paternalGrandfather?: FamilyMember;
-  paternalGrandmother?: FamilyMember;
-  maternalGrandfather?: FamilyMember;
-  maternalGrandmother?: FamilyMember;
-
-  parent?: string;
-  brother?: string[];
-  sister?: string[];
 }
 
 // ============================================================
@@ -244,8 +117,6 @@ export interface School {
   schoolName?: string;
   studentId?: string;
   year?: string;
-  room?: string;
-  number?: string;
 }
 
 export interface Activities {
@@ -273,22 +144,22 @@ export interface Child {
   id: string;
   basicInfo: BasicInfo;
 
-  calendarEvents?: CalendarEvent[];
-  profilePhotoUrl?: string;
   createdAt: string;
   updatedAt: string;
 
-  // ✅ health ใช้ของเดิม
+  // ✅ ของเดิม
   health?: Health;
-
-  // ✅ school + grade (ของเดิม)
   schoolRecords?: SchoolRecord[];
+  activities?: Activity[];
+  awards?: Award[];
 
   // ✅ ของใหม่
   school?: School;
   activitiesNew?: Activities;
   awardsNew?: Awards;
   attachments?: Attachment[];
+
+  calendarEvents?: CalendarEvent[];
 }
 
 // ============================================================
@@ -304,9 +175,22 @@ export interface AppData {
 // HELPERS
 // ============================================================
 
+export const CHILD_COLORS = [
+  { bg: "#EEEDFE", text: "#7F77DD" },
+  { bg: "#FBEAF0", text: "#D4537E" },
+  { bg: "#E1F5EE", text: "#1D9E75" },
+];
+
+export function getChildColor(index: number) {
+  return CHILD_COLORS[index % CHILD_COLORS.length];
+}
+
+export function getInitials(name: string, lastname?: string): string {
+  return ((name?.[0] ?? "") + (lastname?.[0] ?? "")).toUpperCase();
+}
+
 export function calcAge(dob: string): number | null {
   if (!dob) return null;
   const diff = Date.now() - new Date(dob).getTime();
-  const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-  return age < 0 ? 0 : age;
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 }

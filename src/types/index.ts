@@ -72,6 +72,19 @@ export interface TermGrade {
   subjectScores?: SubjectScore[];
 }
 
+export interface ClassPosition {
+  rank: number;
+  term: Term;
+  academicYear: string;
+  outOf?: number;
+}
+
+export interface SchoolPosition {
+  title: string;
+  startDate: string;
+  endDate?: string;
+}
+
 export interface SchoolRecord {
   id: string;
   showPresentYearFirst?: boolean;
@@ -84,8 +97,13 @@ export interface SchoolRecord {
   term: Term;
   startDate?: string;
   endDate?: string;
+
   normalSchoolTime?: { startTime: string; endTime: string };
-activitySchoolTime?: { startTime: string; endTime: string };
+  activitySchoolTime?: { startTime: string; endTime: string };
+
+  classPosition?: ClassPosition[];     // ✅ เพิ่ม
+  schoolPosition?: SchoolPosition[];   // ✅ เพิ่ม
+
   grades?: TermGrade[];
 }
 

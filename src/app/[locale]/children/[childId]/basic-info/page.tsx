@@ -87,7 +87,7 @@ export default async function BasicInfoPage({
 
     </div>
   );
-}
+},
 
 paternalGrandfather: {
       name: "Vittaya Chanthavanij",

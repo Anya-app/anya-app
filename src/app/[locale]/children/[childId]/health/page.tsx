@@ -1,5 +1,8 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
 import { mockAppData } from "@/lib/data";
+import type { Child } from "@/types";
 import {
   Card,
   SectionLabel,
@@ -7,264 +10,250 @@ import {
   EmptyState,
 } from "@/components/child/DetailPrimitives";
 
-// ── Helpers ──────────────────────────────────────────────────
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  border: "1px solid #E5E7EB",
+  borderRadius: 12,
+  fontSize: 14,
+};
 
-function fmtDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+const labelStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 6,
+  fontSize: 13,
+  color: "#6B7280",
+};
 
-function bmiStatus(bmi: number): { label: string; color: string } {
-  if (bmi < 18.5) return { label: "Underweight", color: "#0369A1" };
-  if (bmi < 25)   return { label: "Normal",      color: "#16A34A" };
-  if (bmi < 30)   return { label: "Overweight",  color: "#D97706" };
-  return               { label: "Obese",         color: "#DC2626" };
-}
-
-// ── Page (Server Component) ──────────────────────────────────
-
-export default async function HealthPage({
+export default function HealthPage({
   params,
 }: {
   params: { locale: string; childId: string };
 }) {
-  const { childId } = params;
-  const child = mockAppData.children.find((c) => c.id === childId);
-  if (!child) notFound();
+  const originalChild = mockAppData.children.find((c) => c.id === params.childId);
 
-  const health = child.health;
+  const [child, setChild] = useState<Child | undefined>(originalChild);
+  const [draft, setDraft] = useState<Child | undefined>(originalChild);
+  const [isEditing, setIsEditing] = useState(false);
 
-  if (!health) {
-    return (
-      <div style={{ padding: "14px 16px" }}>
-        <EmptyState emoji="❤️" message="No health information recorded yet." />
-      </div>
-    );
+  useEffect(() => {
+    const saved = localStorage.getItem(`child-${params.childId}`);
+    if (saved) {
+      const parsed = JSON.parse(saved) as Child;
+      setChild(parsed);
+      setDraft(parsed);
+    }
+  }, [params.childId]);
+
+  if (!child || !draft) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  const m = health.measurements ?? {};
-  const bmi =
-    m.weight && m.height
-      ? (m.weight / (m.height / 100) ** 2).toFixed(1)
-      : null;
-  const bmiInfo = bmi ? bmiStatus(Number(bmi)) : null;
+  const h = child.health ?? {};
+  const dh = draft.health ?? {};
+  const m = h.measurements ?? {};
+  const dm = dh.measurements ?? {};
 
-  const growth = [...(health.growthTrack ?? [])].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  function updateMeasurement(field: string, value: string) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        updatedAt: new Date().toISOString(),
+        health: {
+          ...prev.health,
+          measurements: {
+            ...prev.health?.measurements,
+            [field]: value === "" ? undefined : Number(value),
+          },
+        },
+      };
+    });
+  }
+
+  function updateTextArray(field: "congenitalDisease" | "bodyMarks", value: string) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        updatedAt: new Date().toISOString(),
+        health: {
+          ...prev.health,
+          [field]: value
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean),
+        },
+      };
+    });
+  }
+
+  function saveEdit() {
+    localStorage.setItem(`child-${params.childId}`, JSON.stringify(draft));
+    setChild(draft);
+    setIsEditing(false);
+  }
+
+  function cancelEdit() {
+    setDraft(child);
+    setIsEditing(false);
+  }
+
+  function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !draft) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const newAttachment = {
+        id: crypto.randomUUID(),
+        section: "health" as const,
+        name: file.name,
+        type: file.type,
+        dataUrl: reader.result as string,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updated = {
+        ...draft,
+        updatedAt: new Date().toISOString(),
+        attachments: [...(draft.attachments || []), newAttachment],
+      };
+
+      setDraft(updated);
+      setChild(updated);
+      localStorage.setItem(`child-${params.childId}`, JSON.stringify(updated));
+    };
+
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <Card>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+          <SectionLabel emoji="❤️" label="Health" color="#DC2626" bg="#FEE2E2" />
 
-      {/* ── Overview stat tiles ─────────────────────────────── */}
-      {(m.weight || m.height) && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {[
-            { icon: "⚖️", label: "Weight", value: m.weight ? `${m.weight} kg` : "—" },
-            { icon: "📏", label: "Height", value: m.height ? `${m.height} cm` : "—" },
-            { icon: "📐", label: "BMI",    value: bmi ?? "—" },
-          ].map((tile) => (
-            <div
-              key={tile.label}
-              style={{
-                background: "var(--color-background-primary, #fff)",
-                borderRadius: 12,
-                border: "0.5px solid var(--color-border-tertiary, #e5e7eb)",
-                padding: "14px 10px",
-                textAlign: "center",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-              }}
-            >
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{tile.icon}</div>
-              <div
-                style={{
-                  fontSize: 20,
-                  fontWeight: 800,
-                  color:
-                    tile.label === "BMI" && bmiInfo
-                      ? bmiInfo.color
-                      : "#7F77DD",
-                }}
-              >
-                {tile.value}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--color-text-secondary, #6b7280)", marginTop: 2 }}>
-                {tile.label === "BMI" && bmiInfo
-                  ? bmiInfo.label
-                  : tile.label}
-              </div>
-            </div>
-          ))}
+          <div style={{ display: "flex", gap: 8 }}>
+            {!isEditing ? (
+              <button onClick={() => setIsEditing(true)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+                Edit
+              </button>
+            ) : (
+              <>
+                <button onClick={saveEdit} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+                  Save
+                </button>
+                <button onClick={cancelEdit} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      )}
 
-      {/* ── Medical conditions ───────────────────────────────── */}
+        <div style={{ marginTop: 12 }}>
+          <label style={{ display: "inline-block", background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, fontSize: 13, cursor: "pointer" }}>
+            Upload Health File
+            <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
+          </label>
+        </div>
+      </Card>
+
       <Card>
         <SectionLabel emoji="⚕️" label="Medical" color="#DC2626" bg="#FEE2E2" />
 
-        {(health.congenitalDisease ?? []).length > 0 ? (
-          <div style={{ padding: "10px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {health.congenitalDisease!.map((d) => (
-              <span
-                key={d}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: 20,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  background: "#FEE2E2",
-                  color: "#991B1B",
-                }}
-              >
-                {d}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <InfoRow label="Conditions" value="None recorded" />
-        )}
-
-        {(health.bodyMarks ?? []).length > 0 && (
+        {!isEditing ? (
           <>
-            <div
-              style={{
-                padding: "8px 14px 4px",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "var(--color-text-secondary, #6b7280)",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
-              Body marks
-            </div>
-            {health.bodyMarks!.map((mark) => (
-              <InfoRow key={mark} label="" value={`• ${mark}`} />
-            ))}
+            <InfoRow label="Conditions" value={(h.congenitalDisease ?? []).join(", ") || "None recorded" } />
+            <InfoRow label="Body marks" value={(h.bodyMarks ?? []).join(", ") || "None recorded" } />
           </>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+            <label style={labelStyle}>
+              Conditions
+              <input
+                style={inputStyle}
+                value={(dh.congenitalDisease ?? []).join(", ")}
+                onChange={(e) => updateTextArray("congenitalDisease", e.target.value)}
+                placeholder="เช่น Asthma, Allergy"
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Body marks
+              <input
+                style={inputStyle}
+                value={(dh.bodyMarks ?? []).join(", ")}
+                onChange={(e) => updateTextArray("bodyMarks", e.target.value)}
+                placeholder="เช่น mole on left arm"
+              />
+            </label>
+          </div>
         )}
       </Card>
 
-      {/* ── Body measurements ────────────────────────────────── */}
-      {Object.keys(m).length > 0 && (
-        <Card>
-          <SectionLabel emoji="📏" label="Measurements" color="#7C3AED" bg="#F3E8FF" />
+      <Card>
+        <SectionLabel emoji="📏" label="Measurements" color="#7C3AED" bg="#F3E8FF" />
 
-          <InfoRow label="Weight"            value={m.weight   ? `${m.weight} kg`   : undefined} />
-          <InfoRow label="Height"            value={m.height   ? `${m.height} cm`   : undefined} />
-          <InfoRow label="Shoulder width"    value={m.shoulder ? `${m.shoulder} cm` : undefined} />
-          <InfoRow label="Upper arm"         value={m.upperArm ? `${m.upperArm} cm` : undefined} />
-          <InfoRow label="Arm"               value={m.arm      ? `${m.arm} cm`      : undefined} />
-          <InfoRow label="Chest"             value={m.chest    ? `${m.chest} cm`    : undefined} />
-          <InfoRow label="Waist / Hip"       value={m.waistHip ? `${m.waistHip} cm` : undefined} />
-          <InfoRow label="Leg"               value={m.leg      ? `${m.leg} cm`      : undefined} />
-          <InfoRow
-            label="Thigh circumference"
-            value={m.thighCircumference ? `${m.thighCircumference} cm` : undefined}
-          />
-          <InfoRow label="Shoe size (EU)"    value={m.shoeSize ? `${m.shoeSize}` : undefined} />
-        </Card>
-      )}
+        {!isEditing ? (
+          <>
+            <InfoRow label="Weight" value={m.weight ? `${m.weight} kg` : undefined} />
+            <InfoRow label="Height" value={m.height ? `${m.height} cm` : undefined} />
+            <InfoRow label="Shoulder" value={m.shoulder ? `${m.shoulder} cm` : undefined} />
+            <InfoRow label="Upper arm" value={m.upperArm ? `${m.upperArm} cm` : undefined} />
+            <InfoRow label="Arm" value={m.arm ? `${m.arm} cm` : undefined} />
+            <InfoRow label="Chest" value={m.chest ? `${m.chest} cm` : undefined} />
+            <InfoRow label="Waist / Hip" value={m.waistHip ? `${m.waistHip} cm` : undefined} />
+            <InfoRow label="Leg" value={m.leg ? `${m.leg} cm` : undefined} />
+            <InfoRow label="Thigh circumference" value={m.thighCircumference ? `${m.thighCircumference} cm` : undefined} />
+            <InfoRow label="Shoe size" value={m.shoeSize ? `${m.shoeSize}` : undefined} />
 
-      {/* ── Growth track ─────────────────────────────────────── */}
-      {growth.length > 0 && (
-        <Card>
-          <SectionLabel emoji="📈" label="Growth track" color="#0369A1" bg="#E0F2FE" />
-
-          {/* Mini sparkline header row */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              padding: "8px 14px",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "var(--color-text-secondary, #6b7280)",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: "0.5px solid var(--color-border-tertiary, #f1f5f9)",
-            }}
-          >
-            <span>Date</span>
-            <span style={{ textAlign: "center" }}>Weight</span>
-            <span style={{ textAlign: "right" }}>Height</span>
+            {Object.keys(m).length === 0 && (
+              <EmptyState emoji="📊" message="No measurements recorded yet." />
+            )}
+          </>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+            <label style={labelStyle}>Weight<input type="number" style={inputStyle} value={dm.weight ?? ""} onChange={(e) => updateMeasurement("weight", e.target.value)} /></label>
+            <label style={labelStyle}>Height<input type="number" style={inputStyle} value={dm.height ?? ""} onChange={(e) => updateMeasurement("height", e.target.value)} /></label>
+            <label style={labelStyle}>Shoulder<input type="number" style={inputStyle} value={dm.shoulder ?? ""} onChange={(e) => updateMeasurement("shoulder", e.target.value)} /></label>
+            <label style={labelStyle}>Upper arm<input type="number" style={inputStyle} value={dm.upperArm ?? ""} onChange={(e) => updateMeasurement("upperArm", e.target.value)} /></label>
+            <label style={labelStyle}>Arm<input type="number" style={inputStyle} value={dm.arm ?? ""} onChange={(e) => updateMeasurement("arm", e.target.value)} /></label>
+            <label style={labelStyle}>Chest<input type="number" style={inputStyle} value={dm.chest ?? ""} onChange={(e) => updateMeasurement("chest", e.target.value)} /></label>
+            <label style={labelStyle}>Waist / Hip<input type="number" style={inputStyle} value={dm.waistHip ?? ""} onChange={(e) => updateMeasurement("waistHip", e.target.value)} /></label>
+            <label style={labelStyle}>Leg<input type="number" style={inputStyle} value={dm.leg ?? ""} onChange={(e) => updateMeasurement("leg", e.target.value)} /></label>
+            <label style={labelStyle}>Thigh circumference<input type="number" style={inputStyle} value={dm.thighCircumference ?? ""} onChange={(e) => updateMeasurement("thighCircumference", e.target.value)} /></label>
+            <label style={labelStyle}>Shoe size<input type="number" style={inputStyle} value={dm.shoeSize ?? ""} onChange={(e) => updateMeasurement("shoeSize", e.target.value)} /></label>
           </div>
+        )}
+      </Card>
 
-          {growth.map((record, i) => {
-            const prev = growth[i + 1];
-            const wDelta = prev ? record.weight - prev.weight : null;
-            const hDelta = prev ? record.height - prev.height : null;
-            const isLatest = i === 0;
+      <Card>
+        <SectionLabel emoji="📎" label="Health Attachments" color="#1D9E75" bg="#E1F5EE" />
 
-            return (
-              <div
-                key={record.date}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  padding: "10px 14px",
-                  borderBottom: "0.5px solid var(--color-border-tertiary, #f1f5f9)",
-                  background: isLatest
-                    ? "var(--color-background-secondary, #f8fafc)"
-                    : undefined,
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: isLatest ? 700 : 500 }}>
-                    {fmtDate(record.date)}
-                  </div>
-                  {isLatest && (
-                    <div style={{ fontSize: 10, color: "#7F77DD", fontWeight: 600, marginTop: 1 }}>
-                      Latest
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ textAlign: "center" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{record.weight} kg</span>
-                  {wDelta !== null && (
-                    <span
-                      style={{
-                        display: "block",
-                        fontSize: 11,
-                        color: wDelta >= 0 ? "#16A34A" : "#DC2626",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {wDelta >= 0 ? "+" : ""}{wDelta.toFixed(1)}
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ textAlign: "right" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{record.height} cm</span>
-                  {hDelta !== null && (
-                    <span
-                      style={{
-                        display: "block",
-                        fontSize: 11,
-                        color: hDelta >= 0 ? "#16A34A" : "#DC2626",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {hDelta >= 0 ? "+" : ""}{hDelta.toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </Card>
-      )}
-
-      {!m.weight && !m.height && growth.length === 0 && (
-        <EmptyState emoji="📊" message="No measurements recorded yet." />
-      )}
+        {(child.attachments || []).filter((a) => a.section === "health").length > 0 ? (
+          (child.attachments || [])
+            .filter((a) => a.section === "health")
+            .map((a) => (
+              <InfoRow
+                key={a.id}
+                label="File"
+                value={
+                  <a href={a.dataUrl} download={a.name}>
+                    📎 {a.name}
+                  </a>
+                }
+              />
+            ))
+        ) : (
+          <EmptyState emoji="📎" message="No health files uploaded yet." />
+        )}
+      </Card>
     </div>
   );
 }

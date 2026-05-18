@@ -8,6 +8,7 @@ export type AwardLevel = "school" | "district" | "provincial" | "national" | "in
 export type GradeType = "midterm" | "final";
 export type CalendarEventSource = "school" | "activity" | "goal" | "other";
 export type LifeStatus = "alive" | "passed";
+export type Locale = "th" | "en";
 
 // ============================================================
 // MULTI-LANGUAGE NAME

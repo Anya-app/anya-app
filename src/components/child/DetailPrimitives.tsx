@@ -94,13 +94,32 @@ export function EmptyState({
 }
 export function Pill({
   children,
+  label,
   color = "#7F77DD",
   bg = "#F3F0FF",
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  label?: React.ReactNode;
   color?: string;
   bg?: string;
 }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 700,
+        background: bg,
+        color,
+      }}
+    >
+      {children ?? label}
+    </span>
+  );
+}
   return (
     <span
       style={{

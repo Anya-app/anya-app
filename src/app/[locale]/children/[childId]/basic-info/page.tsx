@@ -170,19 +170,21 @@ export default function BasicInfoPage({
     setIsEditing(false);
   }
 
-  function exportJson() {
-    const blob = new Blob([JSON.stringify(child, null, 2)], {
-      type: "application/json",
-    });
+ function exportJson() {
+  if (!child) return; // ✅ FIX
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${child.id}-basic-info.json`;
-    a.click();
+  const blob = new Blob([JSON.stringify(child, null, 2)], {
+    type: "application/json",
+  });
 
-    URL.revokeObjectURL(url);
-  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${child.id}-basic-info.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
 
   function resetLocalData() {
     localStorage.removeItem(`child-${params.childId}`);

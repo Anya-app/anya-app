@@ -14,6 +14,19 @@ function fmtDate(iso: string): string {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
+export type LifeStatus = "alive" | "passed";
+ 
+export interface LocalizedName {
+  value: string;    // the name in the other language
+  language: string; // human-readable language label, e.g. "Thai", "Chinese"
+}
+ 
+export interface FamilyMember {
+  name?: string;
+  altNames?: LocalizedName[];
+  status?: LifeStatus;
+}
+
 // Next.js 14: params is a plain object, not a Promise
 export default async function BasicInfoPage({
   params,
@@ -75,3 +88,32 @@ export default async function BasicInfoPage({
     </div>
   );
 }
+
+paternalGrandfather: {
+      name: "Vittaya Chanthavanij",
+      altNames: [{ value: "วิทยา ฉันทวานิช", language: "Thai" }],
+      status: "Passed",
+    },
+    paternalGrandmother: {
+      name: "Sunida Chanthavanij",
+      altNames: [{ value: "สุนิดา ฉันทวานิช", language: "Thai" }],
+      status: "Passed",
+    },
+ 
+    // Mother's side
+    maternalGrandfather: {
+      name: "Nuttanun Suppaponsiri",
+      altNames: [{ value: "ณัฐนันต์ ศูภผลศิริ", language: "Thai" }],
+      status: "Passed",
+    },
+    maternalGrandmother: {
+      name: "Piyaporn Rodtieng",
+      altNames: [{ value: "ปิยาภรณ์ รอดเที่ยง", language: "Thai" }],
+      status: "Alive",
+    },
+ 
+    parent: "",          // guardian name (if different from parents)
+    brother: [],
+    sister: [],
+  },
+};

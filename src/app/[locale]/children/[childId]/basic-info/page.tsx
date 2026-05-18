@@ -18,17 +18,34 @@ function fmtDate(iso: string): string {
   });
 }
 
-export type LifeStatus = "alive" | "passed";
+function FamilyValue({
+  member,
+}: {
+  member?: {
+    name?: string;
+    altNames?: Array<{ value: string; language: string }>;
+    status?: "alive" | "passed";
+  };
+}) {
+  if (!member?.name) return <>-</>;
 
-export interface LocalizedName {
-  value: string;
-  language: string;
-}
+  const isPassed = member.status === "passed";
 
-export interface FamilyMember {
-  name?: string;
-  altNames?: LocalizedName[];
-  status?: LifeStatus;
+  return (
+    <span style={{ color: isPassed ? "#9CA3AF" : "inherit" }}>
+      {member.name}
+      {member.altNames?.length ? (
+        <span style={{ marginLeft: 6 }}>
+          ({member.altNames.map((n) => n.value).join(", ")})
+        </span>
+      ) : null}
+      {isPassed ? (
+        <span style={{ marginLeft: 8, fontSize: 12 }}>
+          Passed
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 export default async function BasicInfoPage({
@@ -46,8 +63,30 @@ export default async function BasicInfoPage({
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
       <Card>
         <SectionLabel emoji="🪪" label="Identity" color="#7F77DD" bg="#EEEDFE" />
+
         <InfoRow label="First name" value={b.name} />
         <InfoRow label="Last name" value={b.lastname} />
+
+        {b.names?.th?.fullName && (
+          <InfoRow label="Thai full name" value={b.names.th.fullName} />
+        )}
+
+        {b.names?.en?.fullName && (
+          <InfoRow label="English full name" value={b.names.en.fullName} />
+        )}
+
+        {b.names?.zh?.fullName && (
+          <InfoRow label="Chinese name" value={b.names.zh.fullName} />
+        )}
+
+        {b.names?.other?.map((item, index) => (
+          <InfoRow
+            key={`${item.language}-${index}`}
+            label={`${item.language} name`}
+            value={item.fullName}
+          />
+        ))}
+
         <InfoRow label="Middle name" value={b.middleName} />
         <InfoRow label="Saint name" value={b.saintName} />
         <InfoRow label="Other name" value={b.otherName} />
@@ -73,11 +112,10 @@ export default async function BasicInfoPage({
         <InfoRow label="Mother" value={b.motherName} />
         <InfoRow label="Father" value={b.fatherName} />
 
-        {/* NEW GRANDPARENTS STRUCTURE */}
-        <InfoRow label="Paternal Grandfather" value={b.paternalGrandfather?.name} />
-        <InfoRow label="Paternal Grandmother" value={b.paternalGrandmother?.name} />
-        <InfoRow label="Maternal Grandfather" value={b.maternalGrandfather?.name} />
-        <InfoRow label="Maternal Grandmother" value={b.maternalGrandmother?.name} />
+        <InfoRow label="Paternal Grandfather" value={<FamilyValue member={b.paternalGrandfather} />} />
+        <InfoRow label="Paternal Grandmother" value={<FamilyValue member={b.paternalGrandmother} />} />
+        <InfoRow label="Maternal Grandfather" value={<FamilyValue member={b.maternalGrandfather} />} />
+        <InfoRow label="Maternal Grandmother" value={<FamilyValue member={b.maternalGrandmother} />} />
 
         <InfoRow label="Guardian" value={b.parent} />
 

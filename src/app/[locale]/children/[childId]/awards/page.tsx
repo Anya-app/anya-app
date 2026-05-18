@@ -1,11 +1,46 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 import { mockAppData } from "@/lib/data";
-import type { AwardLevel } from "@/types";
-import { Card, EmptyState } from "@/components/child/DetailPrimitives";
+import type { Award, AwardLevel, Child } from "@/types";
+import {
+  Card,
+  SectionLabel,
+  InfoRow,
+  EmptyState,
+} from "@/components/child/DetailPrimitives";
 
-// ── Helpers ──────────────────────────────────────────────────
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  border: "1px solid #E5E7EB",
+  borderRadius: 12,
+  fontSize: 14,
+};
 
-function fmtDate(iso: string): string {
+const labelStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 6,
+  fontSize: 13,
+  color: "#6B7280",
+};
+
+function makeEmptyAward(): Award {
+  return {
+    id: crypto.randomUUID(),
+    awardName: "",
+    category: "",
+    date: "",
+    organization: "",
+    level: "school",
+    note: "",
+  };
+}
+
+function fmtDate(iso?: string) {
+  if (!iso) return "";
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -14,245 +49,304 @@ function fmtDate(iso: string): string {
   });
 }
 
-const LEVEL_STYLE: Record<
-  AwardLevel,
-  { label: string; emoji: string; bg: string; color: string; border: string }
-> = {
-  international: {
-    label: "International",
-    emoji: "🌏",
-    bg: "#FEF9C3",
-    color: "#713F12",
-    border: "#EAB308",
-  },
-  national: {
-    label: "National",
-    emoji: "🇹🇭",
-    bg: "#FEE2E2",
-    color: "#991B1B",
-    border: "#EF4444",
-  },
-  provincial: {
-    label: "Provincial",
-    emoji: "🏙",
-    bg: "#EDE9FE",
-    color: "#4C1D95",
-    border: "#8B5CF6",
-  },
-  district: {
-    label: "District",
-    emoji: "🗺",
-    bg: "#DBEAFE",
-    color: "#1E3A8A",
-    border: "#3B82F6",
-  },
-  school: {
-    label: "School",
-    emoji: "🏫",
-    bg: "#DCFCE7",
-    color: "#14532D",
-    border: "#22C55E",
-  },
-};
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  วิทยาศาสตร์: "🔬",
-  วิชาการ: "📚",
-  กีฬา: "🏅",
-  ดนตรี: "🎵",
-  ศิลปะ: "🎨",
-  Mathematics: "📐",
-};
-
-function categoryEmoji(cat?: string): string {
-  if (!cat) return "🏆";
-  return CATEGORY_EMOJI[cat] ?? "🏆";
+function saveChild(childId: string, data: Child) {
+  localStorage.setItem(`child-${childId}`, JSON.stringify(data));
 }
 
-// ── Page (Server Component) ──────────────────────────────────
-
-export default async function AwardsPage({
+export default function AwardsPage({
   params,
 }: {
   params: { locale: string; childId: string };
 }) {
-  const { childId } = params;
-  const child = mockAppData.children.find((c) => c.id === childId);
-  if (!child) notFound();
-
-  const awards = [...(child.awards ?? [])].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  const originalChild = mockAppData.children.find(
+    (c) => c.id === params.childId
   );
 
-  if (awards.length === 0) {
-    return (
-      <div style={{ padding: "14px 16px" }}>
-        <EmptyState emoji="🏆" message="No awards recorded yet." />
-      </div>
-    );
+  const [child, setChild] = useState<Child | undefined>(originalChild);
+  const [draftAward, setDraftAward] = useState<Award>(makeEmptyAward());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`child-${params.childId}`);
+    if (saved) {
+      const parsed = JSON.parse(saved) as Child;
+      setChild(parsed);
+    }
+  }, [params.childId]);
+
+  if (!child) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  // ── Summary banner ─────────────────────────────────────────
-  const levelCounts = awards.reduce<Partial<Record<AwardLevel, number>>>(
-    (acc, a) => {
-      if (a.level) acc[a.level] = (acc[a.level] ?? 0) + 1;
-      return acc;
-    },
-    {}
+  const awards = [...(child.awards ?? [])].sort(
+    (a, b) =>
+      new Date(b.date || "1900-01-01").getTime() -
+      new Date(a.date || "1900-01-01").getTime()
   );
+
+  function openAddForm() {
+    setDraftAward(makeEmptyAward());
+    setEditingId(null);
+    setIsFormOpen(true);
+  }
+
+  function openEditForm(award: Award) {
+    setDraftAward(award);
+    setEditingId(award.id);
+    setIsFormOpen(true);
+  }
+
+  function cancelForm() {
+    setDraftAward(makeEmptyAward());
+    setEditingId(null);
+    setIsFormOpen(false);
+  }
+
+  function updateField(field: keyof Award, value: string) {
+    setDraftAward((prev) => ({
+      ...prev,
+      [field]: field === "level" ? (value as AwardLevel) : value,
+    }));
+  }
+
+  function saveAward() {
+    if (!draftAward.awardName.trim()) {
+      alert("Please enter award name.");
+      return;
+    }
+
+    if (!draftAward.date) {
+      alert("Please enter award date.");
+      return;
+    }
+
+    const existing = child.awards ?? [];
+
+    const updatedAwards = editingId
+      ? existing.map((a) => (a.id === editingId ? draftAward : a))
+      : [draftAward, ...existing];
+
+    const updatedChild: Child = {
+      ...child,
+      updatedAt: new Date().toISOString(),
+      awards: updatedAwards,
+    };
+
+    setChild(updatedChild);
+    saveChild(params.childId, updatedChild);
+    cancelForm();
+  }
+
+  function deleteAward(id: string) {
+    const ok = confirm("Delete this award?");
+    if (!ok) return;
+
+    const updatedChild: Child = {
+      ...child,
+      updatedAt: new Date().toISOString(),
+      awards: (child.awards ?? []).filter((a) => a.id !== id),
+    };
+
+    setChild(updatedChild);
+    saveChild(params.childId, updatedChild);
+  }
+
+  function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const newAttachment = {
+        id: crypto.randomUUID(),
+        section: "awards" as const,
+        name: file.name,
+        type: file.type,
+        dataUrl: reader.result as string,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedChild: Child = {
+        ...child,
+        updatedAt: new Date().toISOString(),
+        attachments: [...(child.attachments || []), newAttachment],
+      };
+
+      setChild(updatedChild);
+      saveChild(params.childId, updatedChild);
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function exportJson() {
+    const blob = new Blob([JSON.stringify(child, null, 2)], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${child.basicInfo?.name ?? "child"}-awards.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <Card>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <SectionLabel emoji="🏆" label="Awards" color="#BA7517" bg="#FAEEDA" />
 
-      {/* Trophy count banner */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #FEFCE8, #FEF9C3)",
-          border: "1.5px solid #EAB30844",
-          borderRadius: 12,
-          padding: "14px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-        }}
-      >
-        <span style={{ fontSize: 36 }}>🏆</span>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#713F12" }}>
-            {awards.length} Award{awards.length !== 1 ? "s" : ""}
-          </div>
-          <div style={{ display: "flex", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
-            {(Object.entries(levelCounts) as [AwardLevel, number][]).map(
-              ([level, count]) => {
-                const s = LEVEL_STYLE[level];
-                return (
-                  <span
-                    key={level}
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      padding: "2px 8px",
-                      borderRadius: 10,
-                      background: s.bg,
-                      color: s.color,
-                    }}
-                  >
-                    {s.emoji} {s.label} · {count}
-                  </span>
-                );
-              }
-            )}
-          </div>
+          <button onClick={openAddForm} style={{ border: "none", background: "#BA7517", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+            + Add
+          </button>
         </div>
-      </div>
 
-      {/* Award cards */}
-      {awards.map((award) => {
-        const lvl = award.level ? LEVEL_STYLE[award.level] : null;
-        const catEmoji = categoryEmoji(award.category);
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
+            Upload Award File
+            <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
+          </label>
 
-        return (
-          <Card key={award.id}>
-            <div
-              style={{
-                padding: "14px",
-                borderLeft: lvl ? `4px solid ${lvl.border}` : "4px solid #EAB308",
-                display: "flex",
-                gap: 12,
-                alignItems: "flex-start",
-              }}
-            >
-              {/* Icon */}
-              <div
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 10,
-                  background: lvl ? lvl.bg : "#FEF9C3",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 24,
-                  flexShrink: 0,
-                }}
-              >
-                {catEmoji}
-              </div>
+          <button onClick={exportJson} style={{ border: "1px solid #E5E7EB", background: "white", color: "#374151", padding: "8px 12px", borderRadius: 999 }}>
+            Export JSON
+          </button>
+        </div>
+      </Card>
 
-              {/* Content */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 5, lineHeight: 1.4 }}>
-                  {award.awardName}
-                </div>
+      {isFormOpen && (
+        <Card>
+          <SectionLabel emoji="✏️" label={editingId ? "Edit Award" : "Add Award"} color="#BA7517" bg="#FAEEDA" />
 
-                {/* Badges row */}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                  {lvl && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: 10,
-                        background: lvl.bg,
-                        color: lvl.color,
-                      }}
-                    >
-                      {lvl.emoji} {lvl.label}
-                    </span>
-                  )}
-                  {award.category && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: "2px 8px",
-                        borderRadius: 10,
-                        background: "var(--color-background-secondary, #f8fafc)",
-                        color: "var(--color-text-secondary, #6b7280)",
-                      }}
-                    >
-                      {award.category}
-                    </span>
-                  )}
-                </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+            <label style={labelStyle}>
+              Award Name
+              <input style={inputStyle} value={draftAward.awardName} onChange={(e) => updateField("awardName", e.target.value)} />
+            </label>
 
-                {/* Date + Org */}
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--color-text-secondary, #6b7280)",
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span>📅 {fmtDate(award.date)}</span>
-                  {award.organization && <span>🏢 {award.organization}</span>}
-                </div>
+            <label style={labelStyle}>
+              Category
+              <input style={inputStyle} value={draftAward.category ?? ""} onChange={(e) => updateField("category", e.target.value)} placeholder="วิชาการ, กีฬา, ดนตรี, ศิลปะ" />
+            </label>
 
-                {/* Note */}
-                {award.note && (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "var(--color-text-secondary, #6b7280)",
-                      marginTop: 6,
-                      padding: "6px 10px",
-                      background: "var(--color-background-secondary, #f8fafc)",
-                      borderRadius: 7,
-                      lineHeight: 1.5,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    {award.note}
+            <label style={labelStyle}>
+              Date
+              <input type="date" style={inputStyle} value={draftAward.date} onChange={(e) => updateField("date", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Organization
+              <input style={inputStyle} value={draftAward.organization ?? ""} onChange={(e) => updateField("organization", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Level
+              <select style={inputStyle} value={draftAward.level ?? "school"} onChange={(e) => updateField("level", e.target.value)}>
+                <option value="school">School</option>
+                <option value="district">District</option>
+                <option value="provincial">Provincial</option>
+                <option value="national">National</option>
+                <option value="international">International</option>
+              </select>
+            </label>
+
+            <label style={labelStyle}>
+              Note
+              <textarea style={{ ...inputStyle, minHeight: 80 }} value={draftAward.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
+            </label>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveAward} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+                Save
+              </button>
+
+              <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <SectionLabel emoji="📋" label="Award Timeline" color="#BA7517" bg="#FAEEDA" />
+
+        {awards.length > 0 ? (
+          awards.map((a) => (
+            <div key={a.id} style={{ padding: "12px 14px", borderBottom: "0.5px solid #F1F5F9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800 }}>
+                    🏆 {a.awardName}
                   </div>
-                )}
+
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
+                    📅 {fmtDate(a.date)}
+                    {a.organization ? ` · ${a.organization}` : ""}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                    {a.level && (
+                      <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 999, background: "#FAEEDA", color: "#BA7517", fontWeight: 700 }}>
+                        {a.level}
+                      </span>
+                    )}
+
+                    {a.category && (
+                      <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 999, background: "#EEEDFE", color: "#7F77DD", fontWeight: 700 }}>
+                        {a.category}
+                      </span>
+                    )}
+                  </div>
+
+                  {a.note && (
+                    <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8, lineHeight: 1.5 }}>
+                      {a.note}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <button onClick={() => openEditForm(a)} style={{ border: "1px solid #E5E7EB", background: "white", padding: "6px 10px", borderRadius: 999, fontSize: 12 }}>
+                    Edit
+                  </button>
+
+                  <button onClick={() => deleteAward(a.id)} style={{ border: "none", background: "#FEE2E2", color: "#DC2626", padding: "6px 10px", borderRadius: 999, fontSize: 12 }}>
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
-          </Card>
-        );
-      })}
+          ))
+        ) : (
+          <EmptyState emoji="🏆" message="No awards yet." />
+        )}
+      </Card>
+
+      <Card>
+        <SectionLabel emoji="📎" label="Award Attachments" color="#1D9E75" bg="#E1F5EE" />
+
+        {(child.attachments || []).filter((a) => a.section === "awards").length > 0 ? (
+          (child.attachments || [])
+            .filter((a) => a.section === "awards")
+            .map((a) => (
+              <InfoRow
+                key={a.id}
+                label="File"
+                value={
+                  <a href={a.dataUrl} download={a.name}>
+                    📎 {a.name}
+                  </a>
+                }
+              />
+            ))
+        ) : (
+          <EmptyState emoji="📎" message="No award files uploaded yet." />
+        )}
+      </Card>
     </div>
   );
 }

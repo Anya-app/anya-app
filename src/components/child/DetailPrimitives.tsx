@@ -122,14 +122,23 @@ export function Pill({
 }
 export function ScoreBar({
   value,
-  max = 100,
+  max,
+  score,
+  maxScore,
+  color = "#7F77DD",
 }: {
   value?: number;
   max?: number;
+  score?: number;
+  maxScore?: number;
+  color?: string;
 }) {
+  const finalValue = score ?? value ?? 0;
+  const finalMax = maxScore ?? max ?? 100;
+
   const percent =
-    typeof value === "number" && max > 0
-      ? Math.min(100, Math.max(0, (value / max) * 100))
+    finalMax > 0
+      ? Math.min(100, Math.max(0, (finalValue / finalMax) * 100))
       : 0;
 
   return (
@@ -146,13 +155,13 @@ export function ScoreBar({
           style={{
             width: `${percent}%`,
             height: "100%",
-            background: "#7F77DD",
+            background: color,
             borderRadius: 999,
           }}
         />
       </div>
       <div style={{ marginTop: 4, fontSize: 11, color: "#6B7280" }}>
-        {value ?? "-"} / {max}
+        {finalValue} / {finalMax}
       </div>
     </div>
   );

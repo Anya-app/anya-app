@@ -90,3 +90,29 @@ export function EmptyState({
     </div>
   );
 }
+export function Pill({
+  children,
+  color = "#7F77DD",
+  bg = "#F3F0FF",
+}: {
+  children: React.ReactNode;
+  color?: string;
+  bg?: string;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 700,
+        background: bg,
+        color,
+      }}
+    >
+      {children}
+    </span>
+  );
+}

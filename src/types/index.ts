@@ -109,8 +109,25 @@ export interface BasicInfo {
 
   name: string;
   lastname: string;
+  middleName?: string;
+  saintName?: string;
+  otherName?: string;
+  nickname?: string;
 
   dateOfBirth: string;
+  placeOfBirth?: string;
+
+  motherName?: string;
+  fatherName?: string;
+
+  paternalGrandfather?: FamilyMember;
+  paternalGrandmother?: FamilyMember;
+  maternalGrandfather?: FamilyMember;
+  maternalGrandmother?: FamilyMember;
+
+  parent?: string;
+  brother?: string[];
+  sister?: string[];
 }
 
 // ============================================================

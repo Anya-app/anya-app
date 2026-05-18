@@ -41,18 +41,7 @@ export default async function ActivitiesPage({
   const activities = child.activities ?? [];
 
   // Also collect school-level activities from school records
-  const schoolActivities = (child.schoolRecords ?? []).flatMap(
-    (r) =>
-      (r.activities ?? []).map((a) => ({
-        id: `school-${r.id}-${a.name}`,
-        activityName: a.name,
-        category: "โรงเรียน",
-        date: a.date,
-        role: a.role,
-        note: a.description,
-        endDate: undefined as string | undefined,
-      }))
-  );
+const schoolActivities = [];
 
   const all = [
     ...activities,

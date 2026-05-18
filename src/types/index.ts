@@ -260,6 +260,11 @@ export interface Child {
   profilePhotoUrl?: string;
   createdAt: string;
   updatedAt: string;
+health?: Health;
+school?: School;
+activities?: Activities;
+awards?: Awards;
+attachments?: Attachment[];
 }
 
 // ============================================================
@@ -303,4 +308,42 @@ export function getInitials(name: string, lastname?: string): string {
   const first = name?.trim()[0] ?? "";
   const last = lastname?.trim()[0] ?? "";
   return (first + last).toUpperCase() || "?";
+}
+// ======================================================
+// HEALTH / SCHOOL / ACTIVITIES / AWARDS
+// ======================================================
+
+export interface Health {
+  conditions?: string;
+  weight?: number;
+  height?: number;
+  shoulderWidth?: number;
+  upperArm?: number;
+  arm?: number;
+  chest?: number;
+}
+
+export interface School {
+  schoolName?: string;
+  studentId?: string;
+  year?: string;
+  room?: string;
+  number?: string;
+}
+
+export interface Activities {
+  items?: string[];
+}
+
+export interface Awards {
+  items?: string[];
+}
+
+export interface Attachment {
+  id: string;
+  section: "health" | "school" | "activities" | "awards";
+  name: string;
+  type: string;
+  dataUrl: string;
+  createdAt: string;
 }

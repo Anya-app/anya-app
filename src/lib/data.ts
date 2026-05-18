@@ -196,7 +196,7 @@ export const mockAppData: AppData = {
           schoolName: "test petโรงเรียนอนุบาลสวนหลวง",
           studentId: "68005678",
           academicYear: "2568",
-          room: "ป.2/1",
+          room: "Y2",
           number: 5,
           term: "1",
           startDate: "2025-05-15",

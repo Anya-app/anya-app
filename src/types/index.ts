@@ -58,11 +58,27 @@ export interface Health {
 // SCHOOL
 // ============================================================
 
+export interface SubjectScore {
+  subject: string;
+  score: number;
+  maxScore: number;
+  grade?: string;
+}
+
+export interface TermGrade {
+  term: Term;
+  type: GradeType;
+  gpa?: number;
+  subjectScores?: SubjectScore[];
+}
+
 export interface SchoolRecord {
   id: string;
   schoolName: string;
   academicYear: string;
   term: Term;
+
+  grades?: TermGrade[];
 }
 
 // ============================================================

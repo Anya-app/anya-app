@@ -72,6 +72,15 @@ export interface TermGrade {
   subjectScores?: SubjectScore[];
 }
 
+export interface ScheduleSlot {
+  day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+  startTime: string;
+  endTime: string;
+  subject?: string;
+  teacher?: string;
+  room?: string;
+}
+
 export interface ClassPosition {
   rank: number;
   term: Term;
@@ -101,12 +110,12 @@ export interface SchoolRecord {
   normalSchoolTime?: { startTime: string; endTime: string };
   activitySchoolTime?: { startTime: string; endTime: string };
 
-  classPosition?: ClassPosition[];     // ✅ เพิ่ม
-  schoolPosition?: SchoolPosition[];   // ✅ เพิ่ม
+  classPosition?: ClassPosition[];
+  schoolPosition?: SchoolPosition[];
+  classSchedule?: ScheduleSlot[];
 
   grades?: TermGrade[];
 }
-
 // ============================================================
 // ACTIVITY (OLD)
 // ============================================================

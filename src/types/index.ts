@@ -18,6 +18,26 @@ export interface LocalizedName {
   language: string;
 }
 
+export interface MultiLanguageNames {
+  th?: {
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+  };
+  en?: {
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+  };
+  zh?: {
+    fullName?: string;
+  };
+  other?: Array<{
+    language: string;
+    fullName: string;
+  }>;
+}
+
 export interface FamilyMember {
   name?: string;
   altNames?: LocalizedName[];
@@ -191,12 +211,17 @@ export interface CalendarEvent {
 // ============================================================
 
 export interface BasicInfo {
+  // NEW: multi-language names
+  names?: MultiLanguageNames;
+
+  // OLD: keep for backward compatibility
   name: string;
   lastname: string;
   middleName?: string;
   saintName?: string;
   otherName?: string;
   nickname?: string;
+
   dateOfBirth: string;
   placeOfBirth?: string;
 

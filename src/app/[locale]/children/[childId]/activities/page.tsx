@@ -41,7 +41,7 @@ export default async function ActivitiesPage({
   const activities = child.activities ?? [];
 
   // Also collect school-level activities from school records
-const schoolActivities = [];
+const schoolActivities: any[] = [];
 
   const all = [
     ...activities,

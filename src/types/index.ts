@@ -132,6 +132,7 @@ export interface SchoolRecord {
   fieldTrips?: FieldTrip[];
 
   grades?: TermGrade[];
+  yearlyNote?: string;
 }
 
 // ============================================================

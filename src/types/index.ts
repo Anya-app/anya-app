@@ -252,10 +252,7 @@ export interface BasicInfo {
 export interface Child {
   id: string;
   basicInfo: BasicInfo;
-  health?: Health;
-  schoolRecords?: SchoolRecord[];
-  activities?: Activity[];
-  awards?: Award[];
+
   calendarEvents?: CalendarEvent[];
   profilePhotoUrl?: string;
   createdAt: string;

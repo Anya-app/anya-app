@@ -7,6 +7,22 @@ export type Term = "1" | "2" | "3" | "summer" | "special";
 export type AwardLevel = "school" | "district" | "provincial" | "national" | "international";
 export type GradeType = "midterm" | "final";
 export type CalendarEventSource = "school" | "activity" | "goal" | "other";
+export type LifeStatus = "alive" | "passed";
+
+// ============================================================
+// MULTI-LANGUAGE NAME / FAMILY MEMBER
+// ============================================================
+
+export interface LocalizedName {
+  value: string;
+  language: string;
+}
+
+export interface FamilyMember {
+  name?: string;
+  altNames?: LocalizedName[];
+  status?: LifeStatus;
+}
 
 // ============================================================
 // HEALTH
@@ -183,10 +199,22 @@ export interface BasicInfo {
   nickname?: string;
   dateOfBirth: string;
   placeOfBirth?: string;
+
   motherName?: string;
   fatherName?: string;
+
+  // old simple fields — keep for backward compatibility
   grandfather?: string;
   grandmother?: string;
+
+  // father's side
+  paternalGrandfather?: FamilyMember; // ปู่
+  paternalGrandmother?: FamilyMember; // ย่า
+
+  // mother's side
+  maternalGrandfather?: FamilyMember; // ตา
+  maternalGrandmother?: FamilyMember; // ยาย
+
   parent?: string;
   brother?: string[];
   sister?: string[];

@@ -269,7 +269,7 @@ export const mockAppData: AppData = {
       calendarEvents: [
         {
           id: "cal-002-a",
-          title: "ทัศนศึกษาสวนสัตว์",
+          title: "ทัศนศึกษาwater park",
           date: "2025-06-20",
           allDay: true,
           source: "school",

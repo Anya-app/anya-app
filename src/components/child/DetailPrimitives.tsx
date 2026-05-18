@@ -116,3 +116,40 @@ export function Pill({
     </span>
   );
 }
+export function ScoreBar({
+  value,
+  max = 100,
+}: {
+  value?: number;
+  max?: number;
+}) {
+  const percent =
+    typeof value === "number" && max > 0
+      ? Math.min(100, Math.max(0, (value / max) * 100))
+      : 0;
+
+  return (
+    <div style={{ width: "100%" }}>
+      <div
+        style={{
+          height: 8,
+          background: "#E5E7EB",
+          borderRadius: 999,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${percent}%`,
+            height: "100%",
+            background: "#7F77DD",
+            borderRadius: 999,
+          }}
+        />
+      </div>
+      <div style={{ marginTop: 4, fontSize: 11, color: "#6B7280" }}>
+        {value ?? "-"} / {max}
+      </div>
+    </div>
+  );
+}

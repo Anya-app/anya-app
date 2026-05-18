@@ -161,7 +161,7 @@ export interface SchoolRecord {
 }
 
 // ============================================================
-// ACTIVITY
+// ACTIVITY (OLD)
 // ============================================================
 
 export interface Activity {
@@ -175,7 +175,7 @@ export interface Activity {
 }
 
 // ============================================================
-// AWARD
+// AWARD (OLD)
 // ============================================================
 
 export interface Award {
@@ -207,14 +207,12 @@ export interface CalendarEvent {
 }
 
 // ============================================================
-// CHILD — BASIC INFO
+// BASIC INFO
 // ============================================================
 
 export interface BasicInfo {
-  // NEW: multi-language names
   names?: MultiLanguageNames;
 
-  // OLD: keep for backward compatibility
   name: string;
   lastname: string;
   middleName?: string;
@@ -228,17 +226,10 @@ export interface BasicInfo {
   motherName?: string;
   fatherName?: string;
 
-  // old simple fields — keep for backward compatibility
-  grandfather?: string;
-  grandmother?: string;
-
-  // father's side
-  paternalGrandfather?: FamilyMember; // ปู่
-  paternalGrandmother?: FamilyMember; // ย่า
-
-  // mother's side
-  maternalGrandfather?: FamilyMember; // ตา
-  maternalGrandmother?: FamilyMember; // ยาย
+  paternalGrandfather?: FamilyMember;
+  paternalGrandmother?: FamilyMember;
+  maternalGrandfather?: FamilyMember;
+  maternalGrandmother?: FamilyMember;
 
   parent?: string;
   brother?: string[];
@@ -246,79 +237,8 @@ export interface BasicInfo {
 }
 
 // ============================================================
-// CHILD — ROOT
+// NEW STRUCTURE
 // ============================================================
-
-export interface Child {
-  id: string;
-  basicInfo: BasicInfo;
-
-  calendarEvents?: CalendarEvent[];
-  profilePhotoUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-health?: Health;
-school?: School;
-activities?: Activities;
-awards?: Awards;
-attachments?: Attachment[];
-}
-
-// ============================================================
-// APP ROOT
-// ============================================================
-
-export interface AppData {
-  children: Child[];
-  version: string;
-}
-
-// ============================================================
-// UI HELPERS
-// ============================================================
-
-export type Locale = "th" | "en";
-
-export const CHILD_COLORS = [
-  { bg: "#EEEDFE", text: "#7F77DD", dot: "#7F77DD" },
-  { bg: "#FBEAF0", text: "#D4537E", dot: "#D4537E" },
-  { bg: "#E1F5EE", text: "#1D9E75", dot: "#1D9E75" },
-  { bg: "#FAEEDA", text: "#BA7517", dot: "#BA7517" },
-  { bg: "#E0F2FE", text: "#0369A1", dot: "#0369A1" },
-  { bg: "#FEE2E2", text: "#DC2626", dot: "#DC2626" },
-  { bg: "#F3E8FF", text: "#7C3AED", dot: "#7C3AED" },
-  { bg: "#FFEDD5", text: "#EA580C", dot: "#EA580C" },
-] as const;
-
-export function getChildColor(index: number) {
-  return CHILD_COLORS[index % CHILD_COLORS.length];
-}
-
-export function calcAge(dob: string): number | null {
-  if (!dob) return null;
-  const diff = Date.now() - new Date(dob).getTime();
-  const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-  return age < 0 ? 0 : age;
-}
-
-export function getInitials(name: string, lastname?: string): string {
-  const first = name?.trim()[0] ?? "";
-  const last = lastname?.trim()[0] ?? "";
-  return (first + last).toUpperCase() || "?";
-}
-// ======================================================
-// HEALTH / SCHOOL / ACTIVITIES / AWARDS
-// ======================================================
-
-export interface Health {
-  conditions?: string;
-  weight?: number;
-  height?: number;
-  shoulderWidth?: number;
-  upperArm?: number;
-  arm?: number;
-  chest?: number;
-}
 
 export interface School {
   schoolName?: string;
@@ -343,4 +263,50 @@ export interface Attachment {
   type: string;
   dataUrl: string;
   createdAt: string;
+}
+
+// ============================================================
+// CHILD (FINAL)
+// ============================================================
+
+export interface Child {
+  id: string;
+  basicInfo: BasicInfo;
+
+  calendarEvents?: CalendarEvent[];
+  profilePhotoUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // ✅ health ใช้ของเดิม
+  health?: Health;
+
+  // ✅ school + grade (ของเดิม)
+  schoolRecords?: SchoolRecord[];
+
+  // ✅ ของใหม่
+  school?: School;
+  activitiesNew?: Activities;
+  awardsNew?: Awards;
+  attachments?: Attachment[];
+}
+
+// ============================================================
+// APP ROOT
+// ============================================================
+
+export interface AppData {
+  children: Child[];
+  version: string;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+export function calcAge(dob: string): number | null {
+  if (!dob) return null;
+  const diff = Date.now() - new Date(dob).getTime();
+  const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+  return age < 0 ? 0 : age;
 }

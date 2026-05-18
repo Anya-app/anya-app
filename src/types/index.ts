@@ -65,6 +65,13 @@ export interface SubjectScore {
   grade?: string;
 }
 
+export interface TermGrade {
+  term: Term;
+  type: GradeType;
+  gpa?: number;
+  subjectScores?: SubjectScore[];
+}
+
 export interface SchoolRecord {
   id: string;
   showPresentYearFirst?: boolean;
@@ -77,7 +84,6 @@ export interface SchoolRecord {
   term: Term;
   startDate?: string;
   endDate?: string;
-
   grades?: TermGrade[];
 }
 

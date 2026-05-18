@@ -284,22 +284,63 @@ function handleFileUpload(
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <label style={{ display: "inline-block", background: "#EEEDFE", color: "#7F77DD", padding: "8px 12px", borderRadius: 999, fontSize: 13, cursor: "pointer" }}>
-            Upload JSON
-            <label style={{ display: "inline-block", marginLeft: 8, background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, fontSize: 13, cursor: "pointer" }}>
-  Upload File
-  <input
-    type="file"
-    onChange={(e) => handleFileUpload("health", e)}
-    style={{ display: "none" }}
-  />
-</label>
-            <input type="file" accept="application/json" onChange={handleUpload} style={{ display: "none" }} />
-          </label>
+  {/* Upload JSON */}
+  <label
+    style={{
+      display: "inline-block",
+      background: "#EEEDFE",
+      color: "#7F77DD",
+      padding: "8px 12px",
+      borderRadius: 999,
+      fontSize: 13,
+      cursor: "pointer",
+    }}
+  >
+    Upload JSON
+    <input
+      type="file"
+      accept="application/json"
+      onChange={handleUpload}
+      style={{ display: "none" }}
+    />
+  </label>
 
-          {uploadError && <div style={{ color: "#DC2626", fontSize: 13, marginTop: 8 }}>{uploadError}</div>}
-          {saveMessage && <div style={{ color: "#1D9E75", fontSize: 13, marginTop: 8 }}>{saveMessage}</div>}
-        </div>
+  {/* Upload File */}
+  <label
+    style={{
+      display: "inline-block",
+      marginLeft: 8,
+      background: "#E1F5EE",
+      color: "#1D9E75",
+      padding: "8px 12px",
+      borderRadius: 999,
+      fontSize: 13,
+      cursor: "pointer",
+    }}
+  >
+    Upload File
+    <input
+      type="file"
+      onChange={(e) => handleFileUpload("health", e)}
+      style={{ display: "none" }}
+    />
+  </label>
+
+  {/* Error */}
+  {uploadError && (
+    <div style={{ color: "#DC2626", fontSize: 13, marginTop: 8 }}>
+      {uploadError}
+    </div>
+  )}
+
+  {/* Success */}
+  {saveMessage && (
+    <div style={{ color: "#1D9E75", fontSize: 13, marginTop: 8 }}>
+      {saveMessage}
+    </div>
+  )}
+</div>
+       
 
         {!isEditing ? (
           <>

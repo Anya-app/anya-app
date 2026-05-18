@@ -143,7 +143,11 @@ export interface SchoolRecord {
 export interface Activity {
   id: string;
   activityName: string;
+  category?: string;
   date: string;
+  endDate?: string;
+  role?: string;
+  note?: string;
 }
 
 // ============================================================

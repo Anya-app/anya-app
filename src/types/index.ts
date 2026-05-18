@@ -82,7 +82,11 @@ export interface Activity {
 export interface Award {
   id: string;
   awardName: string;
+  category?: string;
   date: string;
+  organization?: string;
+  level?: AwardLevel;
+  note?: string;
 }
 
 // ============================================================

@@ -81,6 +81,14 @@ export interface ScheduleSlot {
   room?: string;
 }
 
+export interface ExamDate {
+  subject: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  room?: string;
+}
+
 export interface ClassPosition {
   rank: number;
   term: Term;
@@ -113,9 +121,11 @@ export interface SchoolRecord {
   classPosition?: ClassPosition[];
   schoolPosition?: SchoolPosition[];
   classSchedule?: ScheduleSlot[];
+  examDates?: ExamDate[];
 
   grades?: TermGrade[];
 }
+
 // ============================================================
 // ACTIVITY (OLD)
 // ============================================================

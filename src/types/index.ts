@@ -84,6 +84,8 @@ export interface SchoolRecord {
   term: Term;
   startDate?: string;
   endDate?: string;
+  normalSchoolTime?: { startTime: string; endTime: string };
+activitySchoolTime?: { startTime: string; endTime: string };
   grades?: TermGrade[];
 }
 

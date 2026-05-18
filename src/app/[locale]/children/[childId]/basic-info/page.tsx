@@ -224,7 +224,33 @@ export default function BasicInfoPage({
 
     reader.readAsText(file);
   }
+function handleFileUpload(
+  section: "health" | "school" | "activities" | "awards",
+  event: React.ChangeEvent<HTMLInputElement>
+) {
+  const file = event.target.files?.[0];
+  if (!file || !draft) return;
 
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const newAttachment = {
+      id: crypto.randomUUID(),
+      section,
+      name: file.name,
+      type: file.type,
+      dataUrl: reader.result as string,
+      createdAt: new Date().toISOString(),
+    };
+
+    setDraft({
+      ...draft,
+      attachments: [...(draft.attachments || []), newAttachment],
+    });
+  };
+
+  reader.readAsDataURL(file);
+}
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
       <Card>

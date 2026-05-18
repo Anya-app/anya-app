@@ -89,6 +89,13 @@ export interface ExamDate {
   room?: string;
 }
 
+export interface FieldTrip {
+  name: string;
+  date: string;
+  destination?: string;
+  note?: string;
+}
+
 export interface ClassPosition {
   rank: number;
   term: Term;
@@ -122,6 +129,7 @@ export interface SchoolRecord {
   schoolPosition?: SchoolPosition[];
   classSchedule?: ScheduleSlot[];
   examDates?: ExamDate[];
+  fieldTrips?: FieldTrip[];
 
   grades?: TermGrade[];
 }

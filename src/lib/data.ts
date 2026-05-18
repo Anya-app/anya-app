@@ -17,8 +17,26 @@ export const mockAppData: AppData = {
         placeOfBirth: "โรงพยาบาลพญาไท2 กรุงเทพฯ",
         motherName: "แววกมล ฉันทวานิช",
         fatherName: "กรวิชญ์ ฉันทวานิช",
-        grandfather: "วิทยา ฉันทวานิช",
-        grandmother: "สุนิดาฉันทวานิช",
+paternalGrandfather: {
+  name: "Vittaya Chanthavanij",
+  altNames: [{ value: "วิทยา ฉันทวานิช", language: "Thai" }],
+  status: "passed",
+},
+paternalGrandmother: {
+  name: "Sunida Chanthavanij",
+  altNames: [{ value: "สุนิดา ฉันทวานิช", language: "Thai" }],
+  status: "passed",
+},
+maternalGrandfather: {
+  name: "Nuttanun Suppaponsiri",
+  altNames: [{ value: "ณัฐนันต์ ศูภผลศิริ", language: "Thai" }],
+  status: "passed",
+},
+maternalGrandmother: {
+  name: "Piyaporn Rodtieng",
+  altNames: [{ value: "ปิยาภรณ์ รอดเที่ยง", language: "Thai" }],
+  status: "alive",
+},
         brother: [],
         sister: [],
       },

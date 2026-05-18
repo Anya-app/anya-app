@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 
-export default async function ChildIndexPage({
+export default function ChildIndexPage({
   params,
 }: {
-  params: Promise<{ locale: string; childId: string }>;
+  params: { locale: string; childId: string };
 }) {
-  const { locale, childId } = await params;
+  const { locale, childId } = params;
+
   redirect(`/${locale}/children/${childId}/basic-info`);
 }

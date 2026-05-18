@@ -2,16 +2,16 @@
 // ENUMS
 // ============================================================
 
+export type Locale = "th" | "en";
 export type SchoolLevel = "university" | "secondary" | "primary" | "kindergarten";
 export type Term = "1" | "2" | "3" | "summer" | "special";
 export type AwardLevel = "school" | "district" | "provincial" | "national" | "international";
 export type GradeType = "midterm" | "final";
 export type CalendarEventSource = "school" | "activity" | "goal" | "other";
 export type LifeStatus = "alive" | "passed";
-export type Locale = "th" | "en";
 
 // ============================================================
-// MULTI-LANGUAGE NAME
+// NAME / FAMILY
 // ============================================================
 
 export interface LocalizedName {
@@ -23,6 +23,13 @@ export interface MultiLanguageNames {
   th?: { firstName?: string; lastName?: string; fullName?: string };
   en?: { firstName?: string; lastName?: string; fullName?: string };
   zh?: { fullName?: string };
+  other?: Array<{ language: string; fullName: string }>;
+}
+
+export interface FamilyMember {
+  name?: string;
+  altNames?: LocalizedName[];
+  status?: LifeStatus;
 }
 
 // ============================================================
@@ -54,7 +61,6 @@ export interface Health {
   growthTrack?: GrowthRecord[];
   measurements?: HealthMeasurements;
 }
-
 
 // ============================================================
 // SCHOOL
@@ -98,6 +104,13 @@ export interface FieldTrip {
   note?: string;
 }
 
+export interface SchoolActivity {
+  name: string;
+  date: string;
+  description?: string;
+  role?: string;
+}
+
 export interface ClassPosition {
   rank: number;
   term: Term;
@@ -132,13 +145,13 @@ export interface SchoolRecord {
   classSchedule?: ScheduleSlot[];
   examDates?: ExamDate[];
   fieldTrips?: FieldTrip[];
-
+  activities?: SchoolActivity[];
   grades?: TermGrade[];
   yearlyNote?: string;
 }
 
 // ============================================================
-// ACTIVITY (OLD)
+// ACTIVITY / AWARD
 // ============================================================
 
 export interface Activity {
@@ -150,10 +163,6 @@ export interface Activity {
   role?: string;
   note?: string;
 }
-
-// ============================================================
-// AWARD (OLD)
-// ============================================================
 
 export interface Award {
   id: string;
@@ -173,7 +182,14 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
+  allDay?: boolean;
+  startTime?: string;
+  endTime?: string;
   source: CalendarEventSource;
+  sourceId?: string;
+  color?: string;
+  note?: string;
 }
 
 // ============================================================
@@ -196,6 +212,9 @@ export interface BasicInfo {
   motherName?: string;
   fatherName?: string;
 
+  grandfather?: string;
+  grandmother?: string;
+
   paternalGrandfather?: FamilyMember;
   paternalGrandmother?: FamilyMember;
   maternalGrandfather?: FamilyMember;
@@ -207,13 +226,15 @@ export interface BasicInfo {
 }
 
 // ============================================================
-// NEW STRUCTURE
+// NEW STRUCTURE / ATTACHMENTS
 // ============================================================
 
 export interface School {
   schoolName?: string;
   studentId?: string;
   year?: string;
+  room?: string;
+  number?: string;
 }
 
 export interface Activities {
@@ -234,34 +255,28 @@ export interface Attachment {
 }
 
 // ============================================================
-// CHILD (FINAL)
+// CHILD / APP ROOT
 // ============================================================
 
 export interface Child {
   id: string;
   basicInfo: BasicInfo;
 
+  profilePhotoUrl?: string;
   createdAt: string;
   updatedAt: string;
 
-  // ✅ ของเดิม
   health?: Health;
   schoolRecords?: SchoolRecord[];
   activities?: Activity[];
   awards?: Award[];
+  calendarEvents?: CalendarEvent[];
 
-  // ✅ ของใหม่
   school?: School;
   activitiesNew?: Activities;
   awardsNew?: Awards;
   attachments?: Attachment[];
-
-  calendarEvents?: CalendarEvent[];
 }
-
-// ============================================================
-// APP ROOT
-// ============================================================
 
 export interface AppData {
   children: Child[];
@@ -288,11 +303,15 @@ export function getChildColor(index: number) {
 }
 
 export function getInitials(name: string, lastname?: string): string {
-  return ((name?.[0] ?? "") + (lastname?.[0] ?? "")).toUpperCase();
+  const first = name?.trim()[0] ?? "";
+  const last = lastname?.trim()[0] ?? "";
+  return (first + last).toUpperCase() || "?";
 }
 
 export function calcAge(dob: string): number | null {
   if (!dob) return null;
   const diff = Date.now() - new Date(dob).getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+  const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+  return age < 0 ? 0 : age;
 }
+

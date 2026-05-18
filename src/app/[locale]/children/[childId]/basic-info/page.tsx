@@ -286,6 +286,14 @@ function handleFileUpload(
         <div style={{ marginTop: 12 }}>
           <label style={{ display: "inline-block", background: "#EEEDFE", color: "#7F77DD", padding: "8px 12px", borderRadius: 999, fontSize: 13, cursor: "pointer" }}>
             Upload JSON
+            <label style={{ display: "inline-block", marginLeft: 8, background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, fontSize: 13, cursor: "pointer" }}>
+  Upload File
+  <input
+    type="file"
+    onChange={(e) => handleFileUpload("health", e)}
+    style={{ display: "none" }}
+  />
+</label>
             <input type="file" accept="application/json" onChange={handleUpload} style={{ display: "none" }} />
           </label>
 

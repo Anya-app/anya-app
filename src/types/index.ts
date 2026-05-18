@@ -268,10 +268,15 @@ export interface AppData {
 // ============================================================
 
 export const CHILD_COLORS = [
-  { bg: "#EEEDFE", text: "#7F77DD" },
-  { bg: "#FBEAF0", text: "#D4537E" },
-  { bg: "#E1F5EE", text: "#1D9E75" },
-];
+  { bg: "#EEEDFE", text: "#7F77DD", dot: "#7F77DD" },
+  { bg: "#FBEAF0", text: "#D4537E", dot: "#D4537E" },
+  { bg: "#E1F5EE", text: "#1D9E75", dot: "#1D9E75" },
+  { bg: "#FAEEDA", text: "#BA7517", dot: "#BA7517" },
+  { bg: "#E0F2FE", text: "#0369A1", dot: "#0369A1" },
+  { bg: "#FEE2E2", text: "#DC2626", dot: "#DC2626" },
+  { bg: "#F3E8FF", text: "#7C3AED", dot: "#7C3AED" },
+  { bg: "#FFEDD5", text: "#EA580C", dot: "#EA580C" },
+] as const;
 
 export function getChildColor(index: number) {
   return CHILD_COLORS[index % CHILD_COLORS.length];

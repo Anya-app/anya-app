@@ -15,7 +15,7 @@ function createEmptyChild(): Child {
       lastname: "",
       nickname: "",
       dateOfBirth: "",
-      gender: "",
+      gender: undefined,
     },
     healthRecords: [],
     schoolRecords: [],

@@ -223,6 +223,8 @@ export interface BasicInfo {
   parent?: string;
   brother?: string[];
   sister?: string[];
+gender?: "male" | "female" | "other";
+  
 }
 
 // ============================================================

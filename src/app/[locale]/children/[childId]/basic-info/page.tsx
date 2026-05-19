@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import { useEffect, useState } from "react";
 import { calcAge, type Child } from "@/types";
 import {
   Card,
@@ -64,36 +65,40 @@ const labelStyle = {
   color: "#6B7280",
 };
 
-export default function BasicInfoPage({
-  params,
-}: {
-  params: { locale: string; childId: string };
-}) {
+export default function BasicInfoPage() {
+  const routeParams = useParams();
+  const childId = String(routechildId ?? routeParams.id ?? "");
+  const { children, setChildren } = useApp();
+
+const routeParams = useParams();
+const childId = String(routechildId ?? routeParams.id ?? "");
 
 const { children, setChildren } = useApp();
 
-const originalChild = children.find((c) => c.id === params.childId);
+const originalChild = children.find((c) => c.id === childId);
 
 const [child, setChild] = useState<Child | undefined>(originalChild);
 const [draft, setDraft] = useState<Child | undefined>(originalChild);
+
+const [isEditing, setIsEditing] = useState(false);
+const [uploadError, setUploadError] = useState("");
+const [saveMessage, setSaveMessage] = useState("");
+
+useEffect(() => {
+  setChild(originalChild);
+  setDraft(originalChild);
+}, [originalChild]);
   
-  const [isEditing, setIsEditing] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [saveMessage, setSaveMessage] = useState("");
-
-  useEffect(() => {
-    const saved = localStorage.getItem(`child-${params.childId}`);
-
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Child;
         setChild(parsed);
         setDraft(parsed);
       } catch {
-        localStorage.removeItem(`child-${params.childId}`);
+        localStorage.removeItem(`child-${childId}`);
       }
     }
-  }, [params.childId]);
+  }, [childId]);
 
   if (!child || !draft) {
     return <div style={{ padding: 16 }}>Child not found</div>;
@@ -220,7 +225,7 @@ function resetLocalData() {
           return;
         }
 
-        localStorage.setItem(`child-${params.childId}`, JSON.stringify(parsed));
+        localStorage.setItem(`child-${childId}`, JSON.stringify(parsed));
         setChild(parsed);
         setDraft(parsed);
         setIsEditing(false);

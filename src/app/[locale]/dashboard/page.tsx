@@ -8,6 +8,8 @@ import { getChildColor, getInitials, calcAge, type Child } from "@/types";
 
 // ✅ เพิ่ม child ใหม่
 function createEmptyChild(): Child {
+  const now = new Date().toISOString();
+
   return {
     id: crypto.randomUUID(),
     basicInfo: {
@@ -17,10 +19,15 @@ function createEmptyChild(): Child {
       dateOfBirth: "",
       gender: undefined,
     },
-    healthRecords: [],
+    profilePhotoUrl: "",
+    createdAt: now,
+    updatedAt: now,
+    health: {},
     schoolRecords: [],
     activities: [],
     awards: [],
+    calendarEvents: [],
+    attachments: [],
   };
 }
 

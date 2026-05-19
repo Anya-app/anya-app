@@ -3,23 +3,21 @@
 import {
   createContext,
   useContext,
-  useState,
+  useEffect,
   useMemo,
+  useState,
   type ReactNode,
 } from "react";
 import type { Child, Locale } from "@/types";
 import { mockAppData } from "@/lib/data";
 
-// ── i18n strings ────────────────────────────────────────────
+const STORAGE_KEY = "anya-app-children-v1";
 
 export const messages = {
   en: {
     appName: "KidPath",
     tagline: "Your children's journey, all in one place",
-    nav: {
-      dashboard: "Dashboard",
-      children: "Children",
-    },
+    nav: { dashboard: "Dashboard", children: "Children" },
     dashboard: {
       title: "Dashboard",
       todayAt: "Today at a glance",
@@ -67,10 +65,7 @@ export const messages = {
   th: {
     appName: "KidPath",
     tagline: "บันทึกการเดินทางของลูก ครบในที่เดียว",
-    nav: {
-      dashboard: "หน้าแรก",
-      children: "เด็กๆ",
-    },
+    nav: { dashboard: "หน้าแรก", children: "เด็กๆ" },
     dashboard: {
       title: "แดชบอร์ด",
       todayAt: "วันนี้ในมุมมองรวม",
@@ -117,21 +112,20 @@ export const messages = {
   },
 } as const;
 
-export type Messages = typeof messages[Locale];
-
-// ── Context types ────────────────────────────────────────────
+export type Messages = (typeof messages)[Locale];
 
 interface AppContextValue {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: Messages;
+
   children: Child[];
+  setChildren: React.Dispatch<React.SetStateAction<Child[]>>;
+
   selectedChildId: string | null;
   setSelectedChildId: (id: string | null) => void;
   getChildById: (id: string) => Child | undefined;
 }
-
-// ── Context ──────────────────────────────────────────────────
 
 const AppContext = createContext<AppContextValue | null>(null);
 
@@ -145,9 +139,25 @@ export function AppProvider({
   const [locale, setLocale] = useState<Locale>(defaultLocale);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
-  // In a real app, children would come from a store / API.
-  // For now we use mock data.
-  const appChildren = mockAppData.children;
+  const [appChildren, setChildren] = useState<Child[]>(() => {
+    if (typeof window === "undefined") return mockAppData.children;
+
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (!saved) return mockAppData.children;
+      return JSON.parse(saved) as Child[];
+    } catch {
+      return mockAppData.children;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(appChildren));
+    } catch {
+      // ignore localStorage error
+    }
+  }, [appChildren]);
 
   const getChildById = (id: string) => appChildren.find((c) => c.id === id);
 
@@ -158,6 +168,7 @@ export function AppProvider({
     setLocale,
     t,
     children: appChildren,
+    setChildren,
     selectedChildId,
     setSelectedChildId,
     getChildById,
@@ -165,8 +176,6 @@ export function AppProvider({
 
   return <AppContext.Provider value={value}>{reactChildren}</AppContext.Provider>;
 }
-
-// ── Hook ─────────────────────────────────────────────────────
 
 export function useApp(): AppContextValue {
   const ctx = useContext(AppContext);

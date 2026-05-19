@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { mockAppData } from "@/lib/data";
+import { useApp } from "@/context/AppContext";
 import { calcAge, type Child } from "@/types";
 import {
   Card,
@@ -69,10 +69,14 @@ export default function BasicInfoPage({
 }: {
   params: { locale: string; childId: string };
 }) {
-  const originalChild = mockAppData.children.find((c) => c.id === params.childId);
 
-  const [child, setChild] = useState<Child | undefined>(originalChild);
-  const [draft, setDraft] = useState<Child | undefined>(originalChild);
+const { children, setChildren } = useApp();
+
+const originalChild = children.find((c) => c.id === params.childId);
+
+const [child, setChild] = useState<Child | undefined>(originalChild);
+const [draft, setDraft] = useState<Child | undefined>(originalChild);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");

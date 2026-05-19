@@ -162,12 +162,17 @@ const [draft, setDraft] = useState<Child | undefined>(originalChild);
     });
   }
 
-  function saveEdit() {
-    localStorage.setItem(`child-${params.childId}`, JSON.stringify(draft));
-    setChild(draft);
-    setIsEditing(false);
-    setSaveMessage("Saved on this device");
-  }
+function saveEdit() {
+  if (!draft) return;
+
+  setChildren((prev: Child[]) =>
+    prev.map((c) => (c.id === draft.id ? draft : c))
+  );
+
+  setChild(draft);
+  setIsEditing(false);
+  setSaveMessage("Saved");
+}
 
   function cancelEdit() {
     setDraft(child);
@@ -190,14 +195,13 @@ const [draft, setDraft] = useState<Child | undefined>(originalChild);
   URL.revokeObjectURL(url);
 }
 
-  function resetLocalData() {
-    localStorage.removeItem(`child-${params.childId}`);
-    if (originalChild) {
-      setChild(originalChild);
-      setDraft(originalChild);
-      setSaveMessage("Reset to original data");
-    }
+function resetLocalData() {
+  if (originalChild) {
+    setChild(originalChild);
+    setDraft(originalChild);
+    setSaveMessage("Reset");
   }
+}
 
   function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];

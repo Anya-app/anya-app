@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import TopBar from "@/components/layout/TopBar";
+import { saveChild, deleteChild as deleteStoredChild } from "@/lib/childStorage";
 import { getChildColor, getInitials, calcAge, type Child } from "@/types";
 
 type Gender = "male" | "female" | "other";
@@ -29,23 +30,32 @@ function emptyForm(): ChildForm {
 function createChild(form: ChildForm): Child {
   const now = new Date().toISOString();
 
+  const firstName = form.name.trim() || "New Child";
+  const lastName = form.lastname.trim();
+  const fullName = `${firstName} ${lastName}`.trim();
+
   return {
     id: crypto.randomUUID(),
+    profilePhotoUrl: "",
+    createdAt: now,
+    updatedAt: now,
+
     basicInfo: {
       names: {
         th: {
-          firstName: form.name.trim(),
-          lastName: form.lastname.trim(),
-          fullName: `${form.name.trim()} ${form.lastname.trim()}`.trim(),
+          firstName,
+          lastName,
+          fullName,
         },
         en: {
-          firstName: form.name.trim(),
-          lastName: form.lastname.trim(),
-          fullName: `${form.name.trim()} ${form.lastname.trim()}`.trim(),
+          firstName,
+          lastName,
+          fullName,
         },
       },
-      name: form.name.trim() || "New Child",
-      lastname: form.lastname.trim(),
+
+      name: firstName,
+      lastname: lastName,
       nickname: form.nickname.trim(),
       dateOfBirth: form.dateOfBirth,
       gender: form.gender || undefined,
@@ -54,23 +64,24 @@ function createChild(form: ChildForm): Child {
       saintName: "",
       otherName: "",
       placeOfBirth: "",
+
       motherName: "",
       fatherName: "",
       grandfather: "",
       grandmother: "",
       parent: "",
+
       brother: [],
       sister: [],
     },
-    profilePhotoUrl: "",
-    createdAt: now,
-    updatedAt: now,
+
     health: {
       congenitalDisease: [],
       bodyMarks: [],
       growthTrack: [],
       measurements: {},
     },
+
     schoolRecords: [],
     activities: [],
     awards: [],
@@ -88,7 +99,14 @@ export default function DashboardPage() {
 
   const handleAddChild = () => {
     const newChild = createChild(form);
-    setChildren((prev: Child[]) => [...prev, newChild]);
+
+    saveChild(newChild.id, newChild);
+
+    setChildren((prev: Child[]) => {
+      const exists = prev.some((c) => c.id === newChild.id);
+      return exists ? prev : [...prev, newChild];
+    });
+
     setForm(emptyForm());
     setIsAddOpen(false);
   };
@@ -96,6 +114,8 @@ export default function DashboardPage() {
   const handleDeleteChild = (id: string) => {
     const ok = window.confirm("Delete this child?");
     if (!ok) return;
+
+    deleteStoredChild(id);
 
     setChildren((prev: Child[]) => prev.filter((c) => c.id !== id));
   };
@@ -106,18 +126,47 @@ export default function DashboardPage() {
     value: string
   ) => {
     setChildren((prev: Child[]) =>
-      prev.map((child) =>
-        child.id === childId
-          ? {
-              ...child,
-              updatedAt: new Date().toISOString(),
-              basicInfo: {
-                ...child.basicInfo,
-                [field]: field === "gender" ? (value || undefined) : value,
+      prev.map((child) => {
+        if (child.id !== childId) return child;
+
+        const nextBasicInfo = {
+          ...child.basicInfo,
+          [field]: field === "gender" ? value || undefined : value,
+        };
+
+        const firstName =
+          field === "name" ? value.trim() || "New Child" : nextBasicInfo.name || "New Child";
+        const lastName =
+          field === "lastname" ? value.trim() : nextBasicInfo.lastname || "";
+
+        const nextChild: Child = {
+          ...child,
+          updatedAt: new Date().toISOString(),
+          basicInfo: {
+            ...nextBasicInfo,
+            name: firstName,
+            lastname: lastName,
+            names: {
+              ...nextBasicInfo.names,
+              th: {
+                ...nextBasicInfo.names?.th,
+                firstName,
+                lastName,
+                fullName: `${firstName} ${lastName}`.trim(),
               },
-            }
-          : child
-      )
+              en: {
+                ...nextBasicInfo.names?.en,
+                firstName,
+                lastName,
+                fullName: `${firstName} ${lastName}`.trim(),
+              },
+            },
+          },
+        };
+
+        saveChild(childId, nextChild);
+        return nextChild;
+      })
     );
   };
 
@@ -161,8 +210,11 @@ export default function DashboardPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {children.map((child, i) => {
             const color = getChildColor(i);
-            const initials = getInitials(child.basicInfo.name, child.basicInfo.lastname);
-            const age = calcAge(child.basicInfo.dateOfBirth);
+            const initials = getInitials(
+              child.basicInfo?.name || "New Child",
+              child.basicInfo?.lastname || ""
+            );
+            const age = calcAge(child.basicInfo?.dateOfBirth || "");
             const isEditing = editingId === child.id;
 
             return (
@@ -198,32 +250,46 @@ export default function DashboardPage() {
                     {isEditing ? (
                       <div style={{ display: "grid", gap: 8 }}>
                         <input
-                          value={child.basicInfo.name}
-                          onChange={(e) => updateBasicInfo(child.id, "name", e.target.value)}
+                          value={child.basicInfo?.name || ""}
+                          onChange={(e) =>
+                            updateBasicInfo(child.id, "name", e.target.value)
+                          }
                           placeholder="First name"
                           style={inputStyle}
                         />
+
                         <input
-                          value={child.basicInfo.lastname}
-                          onChange={(e) => updateBasicInfo(child.id, "lastname", e.target.value)}
+                          value={child.basicInfo?.lastname || ""}
+                          onChange={(e) =>
+                            updateBasicInfo(child.id, "lastname", e.target.value)
+                          }
                           placeholder="Last name"
                           style={inputStyle}
                         />
+
                         <input
-                          value={child.basicInfo.nickname ?? ""}
-                          onChange={(e) => updateBasicInfo(child.id, "nickname", e.target.value)}
+                          value={child.basicInfo?.nickname || ""}
+                          onChange={(e) =>
+                            updateBasicInfo(child.id, "nickname", e.target.value)
+                          }
                           placeholder="Nickname"
                           style={inputStyle}
                         />
+
                         <input
                           type="date"
-                          value={child.basicInfo.dateOfBirth}
-                          onChange={(e) => updateBasicInfo(child.id, "dateOfBirth", e.target.value)}
+                          value={child.basicInfo?.dateOfBirth || ""}
+                          onChange={(e) =>
+                            updateBasicInfo(child.id, "dateOfBirth", e.target.value)
+                          }
                           style={inputStyle}
                         />
+
                         <select
-                          value={child.basicInfo.gender ?? ""}
-                          onChange={(e) => updateBasicInfo(child.id, "gender", e.target.value)}
+                          value={child.basicInfo?.gender || ""}
+                          onChange={(e) =>
+                            updateBasicInfo(child.id, "gender", e.target.value)
+                          }
                           style={inputStyle}
                         >
                           <option value="">Select gender</option>
@@ -238,12 +304,18 @@ export default function DashboardPage() {
                         style={{ textDecoration: "none", color: "inherit" }}
                       >
                         <div style={{ fontWeight: 800, fontSize: 15 }}>
-                          {child.basicInfo.name} {child.basicInfo.lastname}
+                          {child.basicInfo?.name || "New Child"}{" "}
+                          {child.basicInfo?.lastname || ""}
                         </div>
+
                         <div style={{ color: "#6B7280", fontSize: 13, marginTop: 3 }}>
-                          {child.basicInfo.nickname ? `${child.basicInfo.nickname} · ` : ""}
+                          {child.basicInfo?.nickname
+                            ? `${child.basicInfo.nickname} · `
+                            : ""}
                           {age !== null ? `${age} ${t.children.age}` : "No birth date"}
-                          {child.basicInfo.gender ? ` · ${child.basicInfo.gender}` : ""}
+                          {child.basicInfo?.gender
+                            ? ` · ${child.basicInfo.gender}`
+                            : ""}
                         </div>
                       </Link>
                     )}
@@ -298,7 +370,9 @@ export default function DashboardPage() {
               boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
             }}
           >
-            <h2 style={{ margin: "0 0 12px", fontSize: 18 }}>{t.children.addChild}</h2>
+            <h2 style={{ margin: "0 0 12px", fontSize: 18 }}>
+              {t.children.addChild}
+            </h2>
 
             <div style={{ display: "grid", gap: 10 }}>
               <input
@@ -307,27 +381,38 @@ export default function DashboardPage() {
                 placeholder="First name"
                 style={inputStyle}
               />
+
               <input
                 value={form.lastname}
                 onChange={(e) => setForm({ ...form, lastname: e.target.value })}
                 placeholder="Last name"
                 style={inputStyle}
               />
+
               <input
                 value={form.nickname}
                 onChange={(e) => setForm({ ...form, nickname: e.target.value })}
                 placeholder="Nickname"
                 style={inputStyle}
               />
+
               <input
                 type="date"
                 value={form.dateOfBirth}
-                onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, dateOfBirth: e.target.value })
+                }
                 style={inputStyle}
               />
+
               <select
                 value={form.gender}
-                onChange={(e) => setForm({ ...form, gender: e.target.value as ChildForm["gender"] })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    gender: e.target.value as ChildForm["gender"],
+                  })
+                }
                 style={inputStyle}
               >
                 <option value="">Select gender</option>
@@ -337,7 +422,14 @@ export default function DashboardPage() {
               </select>
             </div>
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+                marginTop: 16,
+              }}
+            >
               <button
                 onClick={() => {
                   setIsAddOpen(false);

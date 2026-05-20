@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { mockAppData } from "@/lib/data";
 import type { Child } from "@/types";
 import {
   Card,
@@ -31,12 +30,11 @@ export default function HealthPage({
 }: {
   params: { locale: string; childId: string };
 }) {
-  const originalChild = mockAppData.children.find((c) => c.id === params.childId);
-
-  const [child, setChild] = useState<Child | undefined>(originalChild);
-  const [draft, setDraft] = useState<Child | undefined>(originalChild);
+  const [child, setChild] = useState<Child | null>(null);
+  const [draft, setDraft] = useState<Child | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // ✅ โหลดจาก localStorage เท่านั้น
   useEffect(() => {
     const saved = localStorage.getItem(`child-${params.childId}`);
     if (saved) {
@@ -92,6 +90,8 @@ export default function HealthPage({
   }
 
   function saveEdit() {
+    if (!draft) return;
+
     localStorage.setItem(`child-${params.childId}`, JSON.stringify(draft));
     setChild(draft);
     setIsEditing(false);
@@ -169,8 +169,8 @@ export default function HealthPage({
 
         {!isEditing ? (
           <>
-            <InfoRow label="Conditions" value={(h.congenitalDisease ?? []).join(", ") || "None recorded" } />
-            <InfoRow label="Body marks" value={(h.bodyMarks ?? []).join(", ") || "None recorded" } />
+            <InfoRow label="Conditions" value={(h.congenitalDisease ?? []).join(", ") || "None recorded"} />
+            <InfoRow label="Body marks" value={(h.bodyMarks ?? []).join(", ") || "None recorded"} />
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
@@ -180,7 +180,6 @@ export default function HealthPage({
                 style={inputStyle}
                 value={(dh.congenitalDisease ?? []).join(", ")}
                 onChange={(e) => updateTextArray("congenitalDisease", e.target.value)}
-                placeholder="เช่น Asthma, Allergy"
               />
             </label>
 
@@ -190,7 +189,6 @@ export default function HealthPage({
                 style={inputStyle}
                 value={(dh.bodyMarks ?? []).join(", ")}
                 onChange={(e) => updateTextArray("bodyMarks", e.target.value)}
-                placeholder="เช่น mole on left arm"
               />
             </label>
           </div>
@@ -204,31 +202,11 @@ export default function HealthPage({
           <>
             <InfoRow label="Weight" value={m.weight ? `${m.weight} kg` : undefined} />
             <InfoRow label="Height" value={m.height ? `${m.height} cm` : undefined} />
-            <InfoRow label="Shoulder" value={m.shoulder ? `${m.shoulder} cm` : undefined} />
-            <InfoRow label="Upper arm" value={m.upperArm ? `${m.upperArm} cm` : undefined} />
-            <InfoRow label="Arm" value={m.arm ? `${m.arm} cm` : undefined} />
-            <InfoRow label="Chest" value={m.chest ? `${m.chest} cm` : undefined} />
-            <InfoRow label="Waist / Hip" value={m.waistHip ? `${m.waistHip} cm` : undefined} />
-            <InfoRow label="Leg" value={m.leg ? `${m.leg} cm` : undefined} />
-            <InfoRow label="Thigh circumference" value={m.thighCircumference ? `${m.thighCircumference} cm` : undefined} />
-            <InfoRow label="Shoe size" value={m.shoeSize ? `${m.shoeSize}` : undefined} />
-
-            {Object.keys(m).length === 0 && (
-              <EmptyState emoji="📊" message="No measurements recorded yet." />
-            )}
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
             <label style={labelStyle}>Weight<input type="number" style={inputStyle} value={dm.weight ?? ""} onChange={(e) => updateMeasurement("weight", e.target.value)} /></label>
             <label style={labelStyle}>Height<input type="number" style={inputStyle} value={dm.height ?? ""} onChange={(e) => updateMeasurement("height", e.target.value)} /></label>
-            <label style={labelStyle}>Shoulder<input type="number" style={inputStyle} value={dm.shoulder ?? ""} onChange={(e) => updateMeasurement("shoulder", e.target.value)} /></label>
-            <label style={labelStyle}>Upper arm<input type="number" style={inputStyle} value={dm.upperArm ?? ""} onChange={(e) => updateMeasurement("upperArm", e.target.value)} /></label>
-            <label style={labelStyle}>Arm<input type="number" style={inputStyle} value={dm.arm ?? ""} onChange={(e) => updateMeasurement("arm", e.target.value)} /></label>
-            <label style={labelStyle}>Chest<input type="number" style={inputStyle} value={dm.chest ?? ""} onChange={(e) => updateMeasurement("chest", e.target.value)} /></label>
-            <label style={labelStyle}>Waist / Hip<input type="number" style={inputStyle} value={dm.waistHip ?? ""} onChange={(e) => updateMeasurement("waistHip", e.target.value)} /></label>
-            <label style={labelStyle}>Leg<input type="number" style={inputStyle} value={dm.leg ?? ""} onChange={(e) => updateMeasurement("leg", e.target.value)} /></label>
-            <label style={labelStyle}>Thigh circumference<input type="number" style={inputStyle} value={dm.thighCircumference ?? ""} onChange={(e) => updateMeasurement("thighCircumference", e.target.value)} /></label>
-            <label style={labelStyle}>Shoe size<input type="number" style={inputStyle} value={dm.shoeSize ?? ""} onChange={(e) => updateMeasurement("shoeSize", e.target.value)} /></label>
           </div>
         )}
       </Card>

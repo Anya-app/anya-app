@@ -26,7 +26,9 @@ const labelStyle = {
 };
 
 function makeId() {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
   return `${Date.now()}-${Math.random()}`;
 }
 
@@ -43,8 +45,23 @@ function makeEmptySchoolRecord(): SchoolRecord {
   };
 }
 
-function saveChild(childId: string, data: Child) {
-  localStorage.setItem(`child-${childId}`, JSON.stringify(data));
+function saveChildEverywhere(childId: string, data: Child) {
+  const updatedChild: Child = {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(`child-${childId}`, JSON.stringify(updatedChild));
+
+  const allRaw = localStorage.getItem("anya_children");
+  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+  const exists = all.some((c) => c.id === childId);
+
+  const updatedAll = exists
+    ? all.map((c) => (c.id === childId ? updatedChild : c))
+    : [updatedChild, ...all];
+
+  localStorage.setItem("anya_children", JSON.stringify(updatedAll));
 }
 
 export default function SchoolPage({
@@ -57,25 +74,41 @@ export default function SchoolPage({
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-  const single = localStorage.getItem(`child-${params.childId}`);
+    const single = localStorage.getItem(`child-${params.childId}`);
 
-  if (single) {
-    const parsed = JSON.parse(single) as Child;
-    setChild(parsed);
-    setDraft(parsed);
-    return;
+    if (single) {
+      const parsed = JSON.parse(single) as Child;
+      setChild(parsed);
+      setDraft(parsed);
+      return;
+    }
+
+    const allRaw = localStorage.getItem("anya_children");
+    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+    const found = all.find((c) => c.id === params.childId);
+
+    if (found) {
+      setChild(found);
+      setDraft(found);
+      localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
+    }
+  }, [params.childId]);
+
+  if (!child || !draft) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  const allRaw = localStorage.getItem("anya_children");
-  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-  const found = all.find((c) => c.id === params.childId);
+  // ✅ FIX สำคัญ
+  const currentChild = child;
+  const currentDraft = draft;
 
-  if (found) {
-    setChild(found);
-    setDraft(found);
-    localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
-  }
-}, [params.childId]);
+  const displayRecord = currentChild.schoolRecords?.[0];
+  const editRecord =
+    currentDraft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
+
+  const schoolFiles = (currentChild.attachments ?? []).filter(
+    (a) => a.section === "school"
+  );
 
   function updateField(field: keyof SchoolRecord, value: string) {
     setDraft((prev) => {
@@ -86,9 +119,17 @@ export default function SchoolPage({
 
       let nextValue: string | number | undefined = value;
 
-      if (field === "number") nextValue = value === "" ? undefined : Number(value);
-      if (field === "schoolLevel") nextValue = value as SchoolLevel;
-      if (field === "term") nextValue = value as Term;
+      if (field === "number") {
+        nextValue = value === "" ? undefined : Number(value);
+      }
+
+      if (field === "schoolLevel") {
+        nextValue = value as SchoolLevel;
+      }
+
+      if (field === "term") {
+        nextValue = value as Term;
+      }
 
       const updatedRecord: SchoolRecord = {
         ...base,
@@ -104,7 +145,7 @@ export default function SchoolPage({
   }
 
   function saveEdit() {
-    saveChild(params.childId, currentDraft);
+    saveChildEverywhere(params.childId, currentDraft);
     setChild(currentDraft);
     setIsEditing(false);
   }
@@ -123,7 +164,6 @@ export default function SchoolPage({
     reader.onload = () => {
       const updated: Child = {
         ...currentDraft,
-        updatedAt: new Date().toISOString(),
         attachments: [
           ...(currentDraft.attachments ?? []),
           {
@@ -139,15 +179,11 @@ export default function SchoolPage({
 
       setChild(updated);
       setDraft(updated);
-      saveChild(params.childId, updated);
+      saveChildEverywhere(params.childId, updated);
     };
 
     reader.readAsDataURL(file);
   }
-
-  const schoolFiles = (currentChild.attachments ?? []).filter(
-    (a) => a.section === "school"
-  );
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -194,51 +230,24 @@ export default function SchoolPage({
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>
-              School
-              <input style={inputStyle} value={editRecord.schoolName ?? ""} onChange={(e) => updateField("schoolName", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              School Level
-              <select style={inputStyle} value={editRecord.schoolLevel} onChange={(e) => updateField("schoolLevel", e.target.value)}>
-                <option value="kindergarten">Kindergarten</option>
-                <option value="primary">Primary</option>
-                <option value="secondary">Secondary</option>
-                <option value="university">University</option>
-              </select>
-            </label>
-
-            <label style={labelStyle}>
-              Student ID
-              <input style={inputStyle} value={editRecord.studentId ?? ""} onChange={(e) => updateField("studentId", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Academic Year
-              <input style={inputStyle} value={editRecord.academicYear ?? ""} onChange={(e) => updateField("academicYear", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Term
-              <select style={inputStyle} value={editRecord.term} onChange={(e) => updateField("term", e.target.value)}>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="summer">Summer</option>
-                <option value="special">Special</option>
-              </select>
-            </label>
-
-            <label style={labelStyle}>
-              Room
-              <input style={inputStyle} value={editRecord.room ?? ""} onChange={(e) => updateField("room", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Number
-              <input type="number" style={inputStyle} value={editRecord.number ?? ""} onChange={(e) => updateField("number", e.target.value)} />
-            </label>
+            <label style={labelStyle}>School<input style={inputStyle} value={editRecord.schoolName ?? ""} onChange={(e) => updateField("schoolName", e.target.value)} /></label>
+            <label style={labelStyle}>School Level<select style={inputStyle} value={editRecord.schoolLevel} onChange={(e) => updateField("schoolLevel", e.target.value)}>
+              <option value="kindergarten">Kindergarten</option>
+              <option value="primary">Primary</option>
+              <option value="secondary">Secondary</option>
+              <option value="university">University</option>
+            </select></label>
+            <label style={labelStyle}>Student ID<input style={inputStyle} value={editRecord.studentId ?? ""} onChange={(e) => updateField("studentId", e.target.value)} /></label>
+            <label style={labelStyle}>Academic Year<input style={inputStyle} value={editRecord.academicYear ?? ""} onChange={(e) => updateField("academicYear", e.target.value)} /></label>
+            <label style={labelStyle}>Term<select style={inputStyle} value={editRecord.term} onChange={(e) => updateField("term", e.target.value)}>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="summer">Summer</option>
+              <option value="special">Special</option>
+            </select></label>
+            <label style={labelStyle}>Room<input style={inputStyle} value={editRecord.room ?? ""} onChange={(e) => updateField("room", e.target.value)} /></label>
+            <label style={labelStyle}>Number<input type="number" style={inputStyle} value={editRecord.number ?? ""} onChange={(e) => updateField("number", e.target.value)} /></label>
           </div>
         )}
       </Card>
@@ -248,15 +257,7 @@ export default function SchoolPage({
 
         {schoolFiles.length > 0 ? (
           schoolFiles.map((a) => (
-            <InfoRow
-              key={a.id}
-              label="File"
-              value={
-                <a href={a.dataUrl} download={a.name}>
-                  📎 {a.name}
-                </a>
-              }
-            />
+            <InfoRow key={a.id} label="File" value={<a href={a.dataUrl} download={a.name}>📎 {a.name}</a>} />
           ))
         ) : (
           <EmptyState emoji="📎" message="No school files uploaded yet." />

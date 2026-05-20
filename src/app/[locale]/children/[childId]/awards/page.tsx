@@ -56,8 +56,23 @@ function fmtDate(iso?: string) {
   });
 }
 
-function saveChild(childId: string, data: Child) {
-  localStorage.setItem(`child-${childId}`, JSON.stringify(data));
+function saveChildEverywhere(childId: string, data: Child) {
+  const updatedChild: Child = {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(`child-${childId}`, JSON.stringify(updatedChild));
+
+  const allRaw = localStorage.getItem("anya_children");
+  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+  const exists = all.some((c) => c.id === childId);
+
+  const updatedAll = exists
+    ? all.map((c) => (c.id === childId ? updatedChild : c))
+    : [updatedChild, ...all];
+
+  localStorage.setItem("anya_children", JSON.stringify(updatedAll));
 }
 
 export default function AwardsPage() {
@@ -69,23 +84,39 @@ export default function AwardsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
- useEffect(() => {
-  const single = localStorage.getItem(`child-${childId}`);
+  useEffect(() => {
+    const single = localStorage.getItem(`child-${childId}`);
 
-  if (single) {
-    setChild(JSON.parse(single) as Child);
-    return;
+    if (single) {
+      setChild(JSON.parse(single) as Child);
+      return;
+    }
+
+    const allRaw = localStorage.getItem("anya_children");
+    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+    const found = all.find((c) => c.id === childId);
+
+    if (found) {
+      setChild(found);
+      localStorage.setItem(`child-${childId}`, JSON.stringify(found));
+    }
+  }, [childId]);
+
+  if (!child) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  const allRaw = localStorage.getItem("anya_children");
-  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-  const found = all.find((c) => c.id === childId);
+  const currentChild = child;
 
-  if (found) {
-    setChild(found);
-    localStorage.setItem(`child-${childId}`, JSON.stringify(found));
-  }
-}, [childId]);
+  const awards = [...(currentChild.awards ?? [])].sort(
+    (a, b) =>
+      new Date(b.date || "1900-01-01").getTime() -
+      new Date(a.date || "1900-01-01").getTime()
+  );
+
+  const awardFiles = (currentChild.attachments ?? []).filter(
+    (a) => a.section === "awards"
+  );
 
   function openAddForm() {
     setDraftAward(makeEmptyAward());
@@ -126,12 +157,11 @@ export default function AwardsPage() {
 
     const updatedChild: Child = {
       ...currentChild,
-      updatedAt: new Date().toISOString(),
       awards: updatedAwards,
     };
 
-    setChild(updatedChild);
-    saveChild(childId, updatedChild);
+    setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
+    saveChildEverywhere(childId, updatedChild);
     cancelForm();
   }
 
@@ -140,12 +170,11 @@ export default function AwardsPage() {
 
     const updatedChild: Child = {
       ...currentChild,
-      updatedAt: new Date().toISOString(),
       awards: (currentChild.awards ?? []).filter((a) => a.id !== id),
     };
 
-    setChild(updatedChild);
-    saveChild(childId, updatedChild);
+    setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
+    saveChildEverywhere(childId, updatedChild);
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -157,7 +186,6 @@ export default function AwardsPage() {
     reader.onload = () => {
       const updatedChild: Child = {
         ...currentChild,
-        updatedAt: new Date().toISOString(),
         attachments: [
           ...(currentChild.attachments ?? []),
           {
@@ -171,8 +199,8 @@ export default function AwardsPage() {
         ],
       };
 
-      setChild(updatedChild);
-      saveChild(childId, updatedChild);
+      setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
+      saveChildEverywhere(childId, updatedChild);
     };
 
     reader.readAsDataURL(file);
@@ -190,10 +218,6 @@ export default function AwardsPage() {
     a.click();
     URL.revokeObjectURL(url);
   }
-
-  const awardFiles = (currentChild.attachments ?? []).filter(
-    (a) => a.section === "awards"
-  );
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>

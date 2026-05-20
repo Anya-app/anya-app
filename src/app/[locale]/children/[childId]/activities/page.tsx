@@ -68,7 +68,6 @@ export default function ActivitiesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // ✅ ใช้ helper กลาง
   useEffect(() => {
     const found = getChildById(childId);
     if (found) setChild(found);
@@ -114,6 +113,8 @@ export default function ActivitiesPage() {
   }
 
   function saveActivity() {
+    if (!child) return;
+
     if (!draftActivity.activityName.trim()) {
       alert("Please enter activity name.");
       return;
@@ -132,14 +133,14 @@ export default function ActivitiesPage() {
     };
 
     setChild(updatedChild);
-
-    // ✅ save ผ่าน helper
     saveChild(childId, updatedChild);
 
     cancelForm();
   }
 
   function deleteActivity(id: string) {
+    if (!child) return;
+
     if (!confirm("Delete this activity?")) return;
 
     const updatedChild: Child = {
@@ -149,12 +150,12 @@ export default function ActivitiesPage() {
     };
 
     setChild(updatedChild);
-
-    // ✅ save ผ่าน helper
     saveChild(childId, updatedChild);
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    if (!child) return;
+
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -185,6 +186,8 @@ export default function ActivitiesPage() {
   }
 
   function exportJson() {
+    if (!child) return;
+
     const blob = new Blob([JSON.stringify(child, null, 2)], {
       type: "application/json",
     });

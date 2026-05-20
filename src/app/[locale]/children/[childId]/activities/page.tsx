@@ -56,8 +56,23 @@ function fmtDate(iso?: string) {
   });
 }
 
-function saveChild(childId: string, data: Child) {
-  localStorage.setItem(`child-${childId}`, JSON.stringify(data));
+function saveChildEverywhere(childId: string, data: Child) {
+  const updatedChild: Child = {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(`child-${childId}`, JSON.stringify(updatedChild));
+
+  const allRaw = localStorage.getItem("anya_children");
+  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+  const exists = all.some((c) => c.id === childId);
+
+  const updatedAll = exists
+    ? all.map((c) => (c.id === childId ? updatedChild : c))
+    : [updatedChild, ...all];
+
+  localStorage.setItem("anya_children", JSON.stringify(updatedAll));
 }
 
 export default function ActivitiesPage() {
@@ -72,22 +87,38 @@ export default function ActivitiesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
-  const single = localStorage.getItem(`child-${childId}`);
+    const single = localStorage.getItem(`child-${childId}`);
 
-  if (single) {
-    setChild(JSON.parse(single) as Child);
-    return;
+    if (single) {
+      setChild(JSON.parse(single) as Child);
+      return;
+    }
+
+    const allRaw = localStorage.getItem("anya_children");
+    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+    const found = all.find((c) => c.id === childId);
+
+    if (found) {
+      setChild(found);
+      localStorage.setItem(`child-${childId}`, JSON.stringify(found));
+    }
+  }, [childId]);
+
+  if (!child) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  const allRaw = localStorage.getItem("anya_children");
-  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-  const found = all.find((c) => c.id === childId);
+  const currentChild = child;
 
-  if (found) {
-    setChild(found);
-    localStorage.setItem(`child-${childId}`, JSON.stringify(found));
-  }
-}, [childId]);
+  const activities = [...(currentChild.activities ?? [])].sort(
+    (a, b) =>
+      new Date(b.date || "1900-01-01").getTime() -
+      new Date(a.date || "1900-01-01").getTime()
+  );
+
+  const activityFiles = (currentChild.attachments ?? []).filter(
+    (a) => a.section === "activities"
+  );
 
   function openAddForm() {
     setDraftActivity(makeEmptyActivity());
@@ -128,12 +159,11 @@ export default function ActivitiesPage() {
 
     const updatedChild: Child = {
       ...currentChild,
-      updatedAt: new Date().toISOString(),
       activities: updatedActivities,
     };
 
-    setChild(updatedChild);
-    saveChild(childId, updatedChild);
+    setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
+    saveChildEverywhere(childId, updatedChild);
     cancelForm();
   }
 
@@ -142,12 +172,11 @@ export default function ActivitiesPage() {
 
     const updatedChild: Child = {
       ...currentChild,
-      updatedAt: new Date().toISOString(),
       activities: (currentChild.activities ?? []).filter((a) => a.id !== id),
     };
 
-    setChild(updatedChild);
-    saveChild(childId, updatedChild);
+    setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
+    saveChildEverywhere(childId, updatedChild);
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -159,7 +188,6 @@ export default function ActivitiesPage() {
     reader.onload = () => {
       const updatedChild: Child = {
         ...currentChild,
-        updatedAt: new Date().toISOString(),
         attachments: [
           ...(currentChild.attachments ?? []),
           {
@@ -173,8 +201,8 @@ export default function ActivitiesPage() {
         ],
       };
 
-      setChild(updatedChild);
-      saveChild(childId, updatedChild);
+      setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
+      saveChildEverywhere(childId, updatedChild);
     };
 
     reader.readAsDataURL(file);
@@ -193,15 +221,12 @@ export default function ActivitiesPage() {
     URL.revokeObjectURL(url);
   }
 
-  const activityFiles = (currentChild.attachments ?? []).filter(
-    (a) => a.section === "activities"
-  );
-
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <SectionLabel emoji="🎨" label="Activities" color="#2563EB" bg="#DBEAFE" />
+
           <button onClick={openAddForm} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
             + Add
           </button>
@@ -258,6 +283,7 @@ export default function ActivitiesPage() {
               <button onClick={saveActivity} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
                 Save
               </button>
+
               <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
                 Cancel
               </button>
@@ -270,6 +296,7 @@ export default function ActivitiesPage() {
         activities.map((a) => (
           <Card key={a.id}>
             <SectionLabel emoji="🌟" label={a.activityName || "Untitled Activity"} color="#2563EB" bg="#DBEAFE" />
+
             <InfoRow label="Category" value={a.category || "Not recorded"} />
             <InfoRow label="Date" value={fmtDate(a.date) || "Not recorded"} />
             <InfoRow label="End Date" value={fmtDate(a.endDate) || "Not recorded"} />
@@ -280,6 +307,7 @@ export default function ActivitiesPage() {
               <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
                 Edit
               </button>
+
               <button onClick={() => deleteActivity(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
                 Delete
               </button>
@@ -294,9 +322,18 @@ export default function ActivitiesPage() {
 
       <Card>
         <SectionLabel emoji="📎" label="Activity Attachments" color="#1D9E75" bg="#E1F5EE" />
+
         {activityFiles.length > 0 ? (
           activityFiles.map((a) => (
-            <InfoRow key={a.id} label="File" value={<a href={a.dataUrl} download={a.name}>📎 {a.name}</a>} />
+            <InfoRow
+              key={a.id}
+              label="File"
+              value={
+                <a href={a.dataUrl} download={a.name}>
+                  📎 {a.name}
+                </a>
+              }
+            />
           ))
         ) : (
           <EmptyState emoji="📎" message="No activity files uploaded yet." />

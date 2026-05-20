@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useParams } from "next/navigation";
-import { mockAppData } from "@/lib/data";
 import type { Activity, Child } from "@/types";
 import {
   Card,
@@ -29,9 +28,7 @@ const labelStyle = {
 };
 
 function makeId() {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `${Date.now()}-${Math.random()}`;
 }
 
@@ -50,11 +47,7 @@ function makeEmptyActivity(): Activity {
 function fmtDate(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function saveChild(childId: string, data: Child) {
@@ -65,35 +58,20 @@ export default function ActivitiesPage() {
   const params = useParams<{ locale: string; childId: string }>();
   const childId = params.childId;
 
-  const originalChild = mockAppData.children.find(
-    (c) => c.id === childId
-  );
-
-  const [child, setChild] = useState<Child | undefined>(originalChild);
-  const [draftActivity, setDraftActivity] = useState<Activity>(
-    makeEmptyActivity()
-  );
+  const [child, setChild] = useState<Child | null>(null);
+  const [draftActivity, setDraftActivity] = useState<Activity>(makeEmptyActivity());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(`child-${childId}`);
-    if (saved) {
-      setChild(JSON.parse(saved));
-    }
+    if (saved) setChild(JSON.parse(saved) as Child);
   }, [childId]);
 
-  if (!child) {
-    return <div style={{ padding: 16 }}>Child not found</div>;
-  }
+  if (!child) return <div style={{ padding: 16 }}>Child not found</div>;
 
-  // ✅ FIX: lock child ให้ TS มั่นใจว่าไม่ undefined
-  const currentChild = child;
-
-  const activities = [...(currentChild.activities ?? [])].sort(
-    (a, b) =>
-      new Date(b.date || "1900-01-01").getTime() -
-      new Date(a.date || "1900-01-01").getTime()
+  const activities = [...(child.activities ?? [])].sort(
+    (a, b) => new Date(b.date || "1900-01-01").getTime() - new Date(a.date || "1900-01-01").getTime()
   );
 
   function openAddForm() {
@@ -115,10 +93,7 @@ export default function ActivitiesPage() {
   }
 
   function updateField(field: keyof Activity, value: string) {
-    setDraftActivity((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setDraftActivity((prev) => ({ ...prev, [field]: value }));
   }
 
   function saveActivity() {
@@ -127,21 +102,13 @@ export default function ActivitiesPage() {
       return;
     }
 
-    if (!draftActivity.date) {
-      alert("Please enter activity date.");
-      return;
-    }
-
-    const existing = currentChild.activities ?? [];
-
+    const existing = child.activities ?? [];
     const updatedActivities = editingId
-      ? existing.map((a) =>
-          a.id === editingId ? draftActivity : a
-        )
+      ? existing.map((a) => (a.id === editingId ? draftActivity : a))
       : [draftActivity, ...existing];
 
     const updatedChild: Child = {
-      ...currentChild,
+      ...child,
       updatedAt: new Date().toISOString(),
       activities: updatedActivities,
     };
@@ -155,11 +122,9 @@ export default function ActivitiesPage() {
     if (!confirm("Delete this activity?")) return;
 
     const updatedChild: Child = {
-      ...currentChild,
+      ...child,
       updatedAt: new Date().toISOString(),
-      activities: (currentChild.activities ?? []).filter(
-        (a) => a.id !== id
-      ),
+      activities: (child.activities ?? []).filter((a) => a.id !== id),
     };
 
     setChild(updatedChild);
@@ -173,21 +138,19 @@ export default function ActivitiesPage() {
     const reader = new FileReader();
 
     reader.onload = () => {
-      const newAttachment = {
-        id: makeId(),
-        section: "activities" as const,
-        name: file.name,
-        type: file.type,
-        dataUrl: reader.result as string,
-        createdAt: new Date().toISOString(),
-      };
-
       const updatedChild: Child = {
-        ...currentChild,
+        ...child,
         updatedAt: new Date().toISOString(),
         attachments: [
-          ...(currentChild.attachments ?? []),
-          newAttachment,
+          ...(child.attachments ?? []),
+          {
+            id: makeId(),
+            section: "activities",
+            name: file.name,
+            type: file.type,
+            dataUrl: reader.result as string,
+            createdAt: new Date().toISOString(),
+          },
         ],
       };
 
@@ -199,58 +162,99 @@ export default function ActivitiesPage() {
   }
 
   function exportJson() {
-    const blob = new Blob(
-      [JSON.stringify(currentChild, null, 2)],
-      { type: "application/json" }
-    );
-
+    const blob = new Blob([JSON.stringify(child, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${
-      currentChild.basicInfo?.name ?? "child"
-    }-activities.json`;
+    a.download = `${child.basicInfo?.name ?? "child"}-activities.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
+  const activityFiles = (child.attachments ?? []).filter((a) => a.section === "activities");
+
   return (
-    <div style={{ padding: 16 }}>
-      <button onClick={openAddForm}>+ Add Activity</button>
-
-      {isFormOpen && (
-        <div>
-          <input
-            placeholder="Activity Name"
-            value={draftActivity.activityName}
-            onChange={(e) =>
-              updateField("activityName", e.target.value)
-            }
-          />
-          <input
-            type="date"
-            value={draftActivity.date}
-            onChange={(e) =>
-              updateField("date", e.target.value)
-            }
-          />
-          <button onClick={saveActivity}>Save</button>
-          <button onClick={cancelForm}>Cancel</button>
-        </div>
-      )}
-
-      {activities.map((a) => (
-        <div key={a.id}>
-          {a.activityName}
-          <button onClick={() => openEditForm(a)}>Edit</button>
-          <button onClick={() => deleteActivity(a.id)}>
-            Delete
+    <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <Card>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <SectionLabel emoji="🎨" label="Activities" color="#2563EB" bg="#DBEAFE" />
+          <button onClick={openAddForm} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+            + Add
           </button>
         </div>
-      ))}
 
-      <input type="file" onChange={handleFileUpload} />
-      <button onClick={exportJson}>Export JSON</button>
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
+            Upload Activity File
+            <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
+          </label>
+
+          <button onClick={exportJson} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+            Export JSON
+          </button>
+        </div>
+      </Card>
+
+      {isFormOpen && (
+        <Card>
+          <SectionLabel emoji="✏️" label={editingId ? "Edit Activity" : "Add Activity"} color="#2563EB" bg="#DBEAFE" />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+            <label style={labelStyle}>Activity Name<input style={inputStyle} value={draftActivity.activityName} onChange={(e) => updateField("activityName", e.target.value)} /></label>
+            <label style={labelStyle}>Category<input style={inputStyle} value={draftActivity.category ?? ""} onChange={(e) => updateField("category", e.target.value)} /></label>
+            <label style={labelStyle}>Start Date<input type="date" style={inputStyle} value={draftActivity.date ?? ""} onChange={(e) => updateField("date", e.target.value)} /></label>
+            <label style={labelStyle}>End Date<input type="date" style={inputStyle} value={draftActivity.endDate ?? ""} onChange={(e) => updateField("endDate", e.target.value)} /></label>
+            <label style={labelStyle}>Role<input style={inputStyle} value={draftActivity.role ?? ""} onChange={(e) => updateField("role", e.target.value)} /></label>
+            <label style={labelStyle}>Note<textarea style={{ ...inputStyle, minHeight: 90 }} value={draftActivity.note ?? ""} onChange={(e) => updateField("note", e.target.value)} /></label>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveActivity} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+                Save
+              </button>
+              <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {activities.length > 0 ? (
+        activities.map((a) => (
+          <Card key={a.id}>
+            <SectionLabel emoji="🌟" label={a.activityName || "Untitled Activity"} color="#2563EB" bg="#DBEAFE" />
+            <InfoRow label="Category" value={a.category || "Not recorded"} />
+            <InfoRow label="Date" value={fmtDate(a.date) || "Not recorded"} />
+            <InfoRow label="End Date" value={fmtDate(a.endDate) || "Not recorded"} />
+            <InfoRow label="Role" value={a.role || "Not recorded"} />
+            <InfoRow label="Note" value={a.note || "Not recorded"} />
+
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+                Edit
+              </button>
+              <button onClick={() => deleteActivity(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
+                Delete
+              </button>
+            </div>
+          </Card>
+        ))
+      ) : (
+        <Card>
+          <EmptyState emoji="🎨" message="No activities recorded yet." />
+        </Card>
+      )}
+
+      <Card>
+        <SectionLabel emoji="📎" label="Activity Attachments" color="#1D9E75" bg="#E1F5EE" />
+        {activityFiles.length > 0 ? (
+          activityFiles.map((a) => (
+            <InfoRow key={a.id} label="File" value={<a href={a.dataUrl} download={a.name}>📎 {a.name}</a>} />
+          ))
+        ) : (
+          <EmptyState emoji="📎" message="No activity files uploaded yet." />
+        )}
+      </Card>
     </div>
   );
 }

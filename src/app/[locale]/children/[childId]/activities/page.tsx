@@ -28,7 +28,9 @@ const labelStyle = {
 };
 
 function makeId() {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
   return `${Date.now()}-${Math.random()}`;
 }
 
@@ -47,7 +49,11 @@ function makeEmptyActivity(): Activity {
 function fmtDate(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function saveChild(childId: string, data: Child) {
@@ -59,19 +65,29 @@ export default function ActivitiesPage() {
   const childId = params.childId;
 
   const [child, setChild] = useState<Child | null>(null);
-  const [draftActivity, setDraftActivity] = useState<Activity>(makeEmptyActivity());
+  const [draftActivity, setDraftActivity] = useState<Activity>(
+    makeEmptyActivity()
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(`child-${childId}`);
-    if (saved) setChild(JSON.parse(saved) as Child);
+    if (saved) {
+      setChild(JSON.parse(saved) as Child);
+    }
   }, [childId]);
 
-  if (!child) return <div style={{ padding: 16 }}>Child not found</div>;
+  if (!child) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
+  }
 
-  const activities = [...(child.activities ?? [])].sort(
-    (a, b) => new Date(b.date || "1900-01-01").getTime() - new Date(a.date || "1900-01-01").getTime()
+  const currentChild = child;
+
+  const activities = [...(currentChild.activities ?? [])].sort(
+    (a, b) =>
+      new Date(b.date || "1900-01-01").getTime() -
+      new Date(a.date || "1900-01-01").getTime()
   );
 
   function openAddForm() {
@@ -93,7 +109,10 @@ export default function ActivitiesPage() {
   }
 
   function updateField(field: keyof Activity, value: string) {
-    setDraftActivity((prev) => ({ ...prev, [field]: value }));
+    setDraftActivity((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   }
 
   function saveActivity() {
@@ -102,13 +121,14 @@ export default function ActivitiesPage() {
       return;
     }
 
-    const existing = child.activities ?? [];
+    const existing = currentChild.activities ?? [];
+
     const updatedActivities = editingId
       ? existing.map((a) => (a.id === editingId ? draftActivity : a))
       : [draftActivity, ...existing];
 
     const updatedChild: Child = {
-      ...child,
+      ...currentChild,
       updatedAt: new Date().toISOString(),
       activities: updatedActivities,
     };
@@ -122,9 +142,9 @@ export default function ActivitiesPage() {
     if (!confirm("Delete this activity?")) return;
 
     const updatedChild: Child = {
-      ...child,
+      ...currentChild,
       updatedAt: new Date().toISOString(),
-      activities: (child.activities ?? []).filter((a) => a.id !== id),
+      activities: (currentChild.activities ?? []).filter((a) => a.id !== id),
     };
 
     setChild(updatedChild);
@@ -139,10 +159,10 @@ export default function ActivitiesPage() {
 
     reader.onload = () => {
       const updatedChild: Child = {
-        ...child,
+        ...currentChild,
         updatedAt: new Date().toISOString(),
         attachments: [
-          ...(child.attachments ?? []),
+          ...(currentChild.attachments ?? []),
           {
             id: makeId(),
             section: "activities",
@@ -162,16 +182,21 @@ export default function ActivitiesPage() {
   }
 
   function exportJson() {
-    const blob = new Blob([JSON.stringify(child, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(currentChild, null, 2)], {
+      type: "application/json",
+    });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${child.basicInfo?.name ?? "child"}-activities.json`;
+    a.download = `${currentChild.basicInfo?.name ?? "child"}-activities.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  const activityFiles = (child.attachments ?? []).filter((a) => a.section === "activities");
+  const activityFiles = (currentChild.attachments ?? []).filter(
+    (a) => a.section === "activities"
+  );
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -200,12 +225,35 @@ export default function ActivitiesPage() {
           <SectionLabel emoji="✏️" label={editingId ? "Edit Activity" : "Add Activity"} color="#2563EB" bg="#DBEAFE" />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>Activity Name<input style={inputStyle} value={draftActivity.activityName} onChange={(e) => updateField("activityName", e.target.value)} /></label>
-            <label style={labelStyle}>Category<input style={inputStyle} value={draftActivity.category ?? ""} onChange={(e) => updateField("category", e.target.value)} /></label>
-            <label style={labelStyle}>Start Date<input type="date" style={inputStyle} value={draftActivity.date ?? ""} onChange={(e) => updateField("date", e.target.value)} /></label>
-            <label style={labelStyle}>End Date<input type="date" style={inputStyle} value={draftActivity.endDate ?? ""} onChange={(e) => updateField("endDate", e.target.value)} /></label>
-            <label style={labelStyle}>Role<input style={inputStyle} value={draftActivity.role ?? ""} onChange={(e) => updateField("role", e.target.value)} /></label>
-            <label style={labelStyle}>Note<textarea style={{ ...inputStyle, minHeight: 90 }} value={draftActivity.note ?? ""} onChange={(e) => updateField("note", e.target.value)} /></label>
+            <label style={labelStyle}>
+              Activity Name
+              <input style={inputStyle} value={draftActivity.activityName} onChange={(e) => updateField("activityName", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Category
+              <input style={inputStyle} value={draftActivity.category ?? ""} onChange={(e) => updateField("category", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Start Date
+              <input type="date" style={inputStyle} value={draftActivity.date ?? ""} onChange={(e) => updateField("date", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              End Date
+              <input type="date" style={inputStyle} value={draftActivity.endDate ?? ""} onChange={(e) => updateField("endDate", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Role
+              <input style={inputStyle} value={draftActivity.role ?? ""} onChange={(e) => updateField("role", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Note
+              <textarea style={{ ...inputStyle, minHeight: 90 }} value={draftActivity.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
+            </label>
 
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={saveActivity} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>

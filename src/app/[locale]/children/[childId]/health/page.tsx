@@ -36,22 +36,25 @@ export default function HealthPage({
 
   // ✅ โหลดจาก localStorage เท่านั้น
   useEffect(() => {
-    const saved = localStorage.getItem(`child-${params.childId}`);
-    if (saved) {
-      const parsed = JSON.parse(saved) as Child;
-      setChild(parsed);
-      setDraft(parsed);
-    }
-  }, [params.childId]);
+  const single = localStorage.getItem(`child-${params.childId}`);
 
-  if (!child || !draft) {
-    return <div style={{ padding: 16 }}>Child not found</div>;
+  if (single) {
+    const parsed = JSON.parse(single) as Child;
+    setChild(parsed);
+    setDraft(parsed);
+    return;
   }
 
-  const h = child.health ?? {};
-  const dh = draft.health ?? {};
-  const m = h.measurements ?? {};
-  const dm = dh.measurements ?? {};
+  const allRaw = localStorage.getItem("anya_children");
+  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+  const found = all.find((c) => c.id === params.childId);
+
+  if (found) {
+    setChild(found);
+    setDraft(found);
+    localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
+  }
+}, [params.childId]);
 
   function updateMeasurement(field: string, value: string) {
     setDraft((prev) => {

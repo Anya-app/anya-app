@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useParams } from "next/navigation";
-import type { Activity, Child } from "@/types";
+import type { Award, AwardLevel, Child } from "@/types";
 import {
   Card,
   SectionLabel,
@@ -34,14 +34,14 @@ function makeId() {
   return `${Date.now()}-${Math.random()}`;
 }
 
-function makeEmptyActivity(): Activity {
+function makeEmptyAward(): Award {
   return {
     id: makeId(),
-    activityName: "",
+    awardName: "",
     category: "",
     date: "",
-    endDate: "",
-    role: "",
+    organization: "",
+    level: "school",
     note: "",
   };
 }
@@ -60,14 +60,12 @@ function saveChild(childId: string, data: Child) {
   localStorage.setItem(`child-${childId}`, JSON.stringify(data));
 }
 
-export default function ActivitiesPage() {
+export default function AwardsPage() {
   const params = useParams<{ locale: string; childId: string }>();
   const childId = params.childId;
 
   const [child, setChild] = useState<Child | null>(null);
-  const [draftActivity, setDraftActivity] = useState<Activity>(
-    makeEmptyActivity()
-  );
+  const [draftAward, setDraftAward] = useState<Award>(makeEmptyAward());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -84,53 +82,53 @@ export default function ActivitiesPage() {
 
   const currentChild = child;
 
-  const activities = [...(currentChild.activities ?? [])].sort(
+  const awards = [...(currentChild.awards ?? [])].sort(
     (a, b) =>
       new Date(b.date || "1900-01-01").getTime() -
       new Date(a.date || "1900-01-01").getTime()
   );
 
   function openAddForm() {
-    setDraftActivity(makeEmptyActivity());
+    setDraftAward(makeEmptyAward());
     setEditingId(null);
     setIsFormOpen(true);
   }
 
-  function openEditForm(activity: Activity) {
-    setDraftActivity({ ...activity });
-    setEditingId(activity.id);
+  function openEditForm(award: Award) {
+    setDraftAward({ ...award });
+    setEditingId(award.id);
     setIsFormOpen(true);
   }
 
   function cancelForm() {
-    setDraftActivity(makeEmptyActivity());
+    setDraftAward(makeEmptyAward());
     setEditingId(null);
     setIsFormOpen(false);
   }
 
-  function updateField(field: keyof Activity, value: string) {
-    setDraftActivity((prev) => ({
+  function updateField(field: keyof Award, value: string) {
+    setDraftAward((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: field === "level" ? (value as AwardLevel) : value,
     }));
   }
 
-  function saveActivity() {
-    if (!draftActivity.activityName.trim()) {
-      alert("Please enter activity name.");
+  function saveAward() {
+    if (!draftAward.awardName.trim()) {
+      alert("Please enter award name.");
       return;
     }
 
-    const existing = currentChild.activities ?? [];
+    const existing = currentChild.awards ?? [];
 
-    const updatedActivities = editingId
-      ? existing.map((a) => (a.id === editingId ? draftActivity : a))
-      : [draftActivity, ...existing];
+    const updatedAwards = editingId
+      ? existing.map((a) => (a.id === editingId ? draftAward : a))
+      : [draftAward, ...existing];
 
     const updatedChild: Child = {
       ...currentChild,
       updatedAt: new Date().toISOString(),
-      activities: updatedActivities,
+      awards: updatedAwards,
     };
 
     setChild(updatedChild);
@@ -138,13 +136,13 @@ export default function ActivitiesPage() {
     cancelForm();
   }
 
-  function deleteActivity(id: string) {
-    if (!confirm("Delete this activity?")) return;
+  function deleteAward(id: string) {
+    if (!confirm("Delete this award?")) return;
 
     const updatedChild: Child = {
       ...currentChild,
       updatedAt: new Date().toISOString(),
-      activities: (currentChild.activities ?? []).filter((a) => a.id !== id),
+      awards: (currentChild.awards ?? []).filter((a) => a.id !== id),
     };
 
     setChild(updatedChild);
@@ -165,7 +163,7 @@ export default function ActivitiesPage() {
           ...(currentChild.attachments ?? []),
           {
             id: makeId(),
-            section: "activities",
+            section: "awards",
             name: file.name,
             type: file.type,
             dataUrl: reader.result as string,
@@ -189,28 +187,29 @@ export default function ActivitiesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${currentChild.basicInfo?.name ?? "child"}-activities.json`;
+    a.download = `${currentChild.basicInfo?.name ?? "child"}-awards.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  const activityFiles = (currentChild.attachments ?? []).filter(
-    (a) => a.section === "activities"
+  const awardFiles = (currentChild.attachments ?? []).filter(
+    (a) => a.section === "awards"
   );
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <SectionLabel emoji="🎨" label="Activities" color="#2563EB" bg="#DBEAFE" />
-          <button onClick={openAddForm} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+          <SectionLabel emoji="🏆" label="Awards" color="#BA7517" bg="#FAEEDA" />
+
+          <button onClick={openAddForm} style={{ border: "none", background: "#BA7517", color: "white", padding: "8px 12px", borderRadius: 999 }}>
             + Add
           </button>
         </div>
 
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
-            Upload Activity File
+            Upload Award File
             <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
           </label>
 
@@ -222,43 +221,51 @@ export default function ActivitiesPage() {
 
       {isFormOpen && (
         <Card>
-          <SectionLabel emoji="✏️" label={editingId ? "Edit Activity" : "Add Activity"} color="#2563EB" bg="#DBEAFE" />
+          <SectionLabel emoji="✏️" label={editingId ? "Edit Award" : "Add Award"} color="#BA7517" bg="#FAEEDA" />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
             <label style={labelStyle}>
-              Activity Name
-              <input style={inputStyle} value={draftActivity.activityName} onChange={(e) => updateField("activityName", e.target.value)} />
+              Award Name
+              <input style={inputStyle} value={draftAward.awardName} onChange={(e) => updateField("awardName", e.target.value)} />
             </label>
 
             <label style={labelStyle}>
               Category
-              <input style={inputStyle} value={draftActivity.category ?? ""} onChange={(e) => updateField("category", e.target.value)} />
+              <input style={inputStyle} value={draftAward.category ?? ""} onChange={(e) => updateField("category", e.target.value)} />
             </label>
 
             <label style={labelStyle}>
-              Start Date
-              <input type="date" style={inputStyle} value={draftActivity.date ?? ""} onChange={(e) => updateField("date", e.target.value)} />
+              Date
+              <input type="date" style={inputStyle} value={draftAward.date ?? ""} onChange={(e) => updateField("date", e.target.value)} />
             </label>
 
             <label style={labelStyle}>
-              End Date
-              <input type="date" style={inputStyle} value={draftActivity.endDate ?? ""} onChange={(e) => updateField("endDate", e.target.value)} />
+              Organization
+              <input style={inputStyle} value={draftAward.organization ?? ""} onChange={(e) => updateField("organization", e.target.value)} />
             </label>
 
             <label style={labelStyle}>
-              Role
-              <input style={inputStyle} value={draftActivity.role ?? ""} onChange={(e) => updateField("role", e.target.value)} />
+              Level
+              <select style={inputStyle} value={draftAward.level ?? "school"} onChange={(e) => updateField("level", e.target.value)}>
+                <option value="school">School</option>
+                <option value="district">District</option>
+                <option value="province">Province</option>
+                <option value="national">National</option>
+                <option value="international">International</option>
+                <option value="other">Other</option>
+              </select>
             </label>
 
             <label style={labelStyle}>
               Note
-              <textarea style={{ ...inputStyle, minHeight: 90 }} value={draftActivity.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
+              <textarea style={{ ...inputStyle, minHeight: 90 }} value={draftAward.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
             </label>
 
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={saveActivity} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+              <button onClick={saveAward} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
                 Save
               </button>
+
               <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
                 Cancel
               </button>
@@ -267,21 +274,22 @@ export default function ActivitiesPage() {
         </Card>
       )}
 
-      {activities.length > 0 ? (
-        activities.map((a) => (
+      {awards.length > 0 ? (
+        awards.map((a) => (
           <Card key={a.id}>
-            <SectionLabel emoji="🌟" label={a.activityName || "Untitled Activity"} color="#2563EB" bg="#DBEAFE" />
+            <SectionLabel emoji="🏅" label={a.awardName || "Untitled Award"} color="#BA7517" bg="#FAEEDA" />
             <InfoRow label="Category" value={a.category || "Not recorded"} />
             <InfoRow label="Date" value={fmtDate(a.date) || "Not recorded"} />
-            <InfoRow label="End Date" value={fmtDate(a.endDate) || "Not recorded"} />
-            <InfoRow label="Role" value={a.role || "Not recorded"} />
+            <InfoRow label="Organization" value={a.organization || "Not recorded"} />
+            <InfoRow label="Level" value={a.level || "Not recorded"} />
             <InfoRow label="Note" value={a.note || "Not recorded"} />
 
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+              <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#BA7517", color: "white", padding: "8px 12px", borderRadius: 999 }}>
                 Edit
               </button>
-              <button onClick={() => deleteActivity(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
+
+              <button onClick={() => deleteAward(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
                 Delete
               </button>
             </div>
@@ -289,18 +297,27 @@ export default function ActivitiesPage() {
         ))
       ) : (
         <Card>
-          <EmptyState emoji="🎨" message="No activities recorded yet." />
+          <EmptyState emoji="🏆" message="No awards recorded yet." />
         </Card>
       )}
 
       <Card>
-        <SectionLabel emoji="📎" label="Activity Attachments" color="#1D9E75" bg="#E1F5EE" />
-        {activityFiles.length > 0 ? (
-          activityFiles.map((a) => (
-            <InfoRow key={a.id} label="File" value={<a href={a.dataUrl} download={a.name}>📎 {a.name}</a>} />
+        <SectionLabel emoji="📎" label="Award Attachments" color="#1D9E75" bg="#E1F5EE" />
+
+        {awardFiles.length > 0 ? (
+          awardFiles.map((a) => (
+            <InfoRow
+              key={a.id}
+              label="File"
+              value={
+                <a href={a.dataUrl} download={a.name}>
+                  📎 {a.name}
+                </a>
+              }
+            />
           ))
         ) : (
-          <EmptyState emoji="📎" message="No activity files uploaded yet." />
+          <EmptyState emoji="📎" message="No award files uploaded yet." />
         )}
       </Card>
     </div>

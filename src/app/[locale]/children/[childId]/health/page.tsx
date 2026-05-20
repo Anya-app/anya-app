@@ -34,27 +34,37 @@ export default function HealthPage({
   const [draft, setDraft] = useState<Child | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // ✅ โหลดจาก localStorage เท่านั้น
+  // ✅ โหลด child จาก storage กลาง
   useEffect(() => {
-  const single = localStorage.getItem(`child-${params.childId}`);
+    const single = localStorage.getItem(`child-${params.childId}`);
 
-  if (single) {
-    const parsed = JSON.parse(single) as Child;
-    setChild(parsed);
-    setDraft(parsed);
-    return;
+    if (single) {
+      const parsed = JSON.parse(single) as Child;
+      setChild(parsed);
+      setDraft(parsed);
+      return;
+    }
+
+    const allRaw = localStorage.getItem("anya_children");
+    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+    const found = all.find((c) => c.id === params.childId);
+
+    if (found) {
+      setChild(found);
+      setDraft(found);
+      localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
+    }
+  }, [params.childId]);
+
+  if (!child || !draft) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  const allRaw = localStorage.getItem("anya_children");
-  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-  const found = all.find((c) => c.id === params.childId);
-
-  if (found) {
-    setChild(found);
-    setDraft(found);
-    localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
-  }
-}, [params.childId]);
+  // ✅ FIX สำคัญ (ตัวที่หายไป)
+  const h = child.health ?? {};
+  const dh = draft.health ?? {};
+  const m = h.measurements ?? {};
+  const dm = dh.measurements ?? {};
 
   function updateMeasurement(field: string, value: string) {
     setDraft((prev) => {
@@ -95,7 +105,16 @@ export default function HealthPage({
   function saveEdit() {
     if (!draft) return;
 
+    // ✅ save ทั้ง 2 ที่
     localStorage.setItem(`child-${params.childId}`, JSON.stringify(draft));
+
+    const allRaw = localStorage.getItem("anya_children");
+    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+    const updatedAll = all.map((c) =>
+      c.id === params.childId ? draft : c
+    );
+    localStorage.setItem("anya_children", JSON.stringify(updatedAll));
+
     setChild(draft);
     setIsEditing(false);
   }
@@ -141,26 +160,24 @@ export default function HealthPage({
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
           <SectionLabel emoji="❤️" label="Health" color="#DC2626" bg="#FEE2E2" />
 
-          <div style={{ display: "flex", gap: 8 }}>
-            {!isEditing ? (
-              <button onClick={() => setIsEditing(true)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-                Edit
+          {!isEditing ? (
+            <button onClick={() => setIsEditing(true)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+              Edit
+            </button>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveEdit} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+                Save
               </button>
-            ) : (
-              <>
-                <button onClick={saveEdit} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-                  Save
-                </button>
-                <button onClick={cancelEdit} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
-                  Cancel
-                </button>
-              </>
-            )}
-          </div>
+              <button onClick={cancelEdit} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <label style={{ display: "inline-block", background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, fontSize: 13, cursor: "pointer" }}>
+          <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
             Upload Health File
             <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
           </label>
@@ -179,20 +196,12 @@ export default function HealthPage({
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
             <label style={labelStyle}>
               Conditions
-              <input
-                style={inputStyle}
-                value={(dh.congenitalDisease ?? []).join(", ")}
-                onChange={(e) => updateTextArray("congenitalDisease", e.target.value)}
-              />
+              <input style={inputStyle} value={(dh.congenitalDisease ?? []).join(", ")} onChange={(e) => updateTextArray("congenitalDisease", e.target.value)} />
             </label>
 
             <label style={labelStyle}>
               Body marks
-              <input
-                style={inputStyle}
-                value={(dh.bodyMarks ?? []).join(", ")}
-                onChange={(e) => updateTextArray("bodyMarks", e.target.value)}
-              />
+              <input style={inputStyle} value={(dh.bodyMarks ?? []).join(", ")} onChange={(e) => updateTextArray("bodyMarks", e.target.value)} />
             </label>
           </div>
         )}
@@ -211,28 +220,6 @@ export default function HealthPage({
             <label style={labelStyle}>Weight<input type="number" style={inputStyle} value={dm.weight ?? ""} onChange={(e) => updateMeasurement("weight", e.target.value)} /></label>
             <label style={labelStyle}>Height<input type="number" style={inputStyle} value={dm.height ?? ""} onChange={(e) => updateMeasurement("height", e.target.value)} /></label>
           </div>
-        )}
-      </Card>
-
-      <Card>
-        <SectionLabel emoji="📎" label="Health Attachments" color="#1D9E75" bg="#E1F5EE" />
-
-        {(child.attachments || []).filter((a) => a.section === "health").length > 0 ? (
-          (child.attachments || [])
-            .filter((a) => a.section === "health")
-            .map((a) => (
-              <InfoRow
-                key={a.id}
-                label="File"
-                value={
-                  <a href={a.dataUrl} download={a.name}>
-                    📎 {a.name}
-                  </a>
-                }
-              />
-            ))
-        ) : (
-          <EmptyState emoji="📎" message="No health files uploaded yet." />
         )}
       </Card>
     </div>

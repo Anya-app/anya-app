@@ -49,43 +49,12 @@ export default function BasicInfoPage() {
     setDraft((prev) => {
       if (!prev) return prev;
 
-      const nextBasicInfo = {
-        ...prev.basicInfo,
-        [field]: value,
-      };
-
-      const firstName =
-        field === "name"
-          ? value.trim() || "New Child"
-          : nextBasicInfo.name || "New Child";
-
-      const lastName =
-        field === "lastname"
-          ? value.trim()
-          : nextBasicInfo.lastname || "";
-
       return {
         ...prev,
         updatedAt: new Date().toISOString(),
         basicInfo: {
-          ...nextBasicInfo,
-          name: firstName,
-          lastname: lastName,
-          names: {
-            ...nextBasicInfo.names,
-            th: {
-              ...nextBasicInfo.names?.th,
-              firstName,
-              lastName,
-              fullName: `${firstName} ${lastName}`.trim(),
-            },
-            en: {
-              ...nextBasicInfo.names?.en,
-              firstName,
-              lastName,
-              fullName: `${firstName} ${lastName}`.trim(),
-            },
-          },
+          ...prev.basicInfo,
+          [field]: value,
         },
       };
     });
@@ -94,10 +63,8 @@ export default function BasicInfoPage() {
   function save() {
     if (!draft) return;
 
-    // ✅ save localStorage
     saveChild(draft.id, draft);
 
-    // ✅ update state
     setChildren((prev: Child[]) =>
       prev.map((c) => (c.id === draft.id ? draft : c))
     );
@@ -113,39 +80,16 @@ export default function BasicInfoPage() {
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+      
+      {/* BASIC */}
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <SectionLabel emoji="🪪" label="Basic Info" color="#7F77DD" bg="#EEEDFE" />
-
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              style={{ background: "#7F77DD", color: "#fff", border: "none", padding: "8px 12px", borderRadius: 999 }}
-            >
-              Edit
-            </button>
-          ) : (
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={save}
-                style={{ background: "#1D9E75", color: "#fff", border: "none", padding: "8px 12px", borderRadius: 999 }}
-              >
-                Save
-              </button>
-              <button
-                onClick={cancel}
-                style={{ border: "1px solid #E5E7EB", padding: "8px 12px", borderRadius: 999 }}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
+        <SectionLabel emoji="🪪" label="Basic Info" color="#7F77DD" bg="#EEEDFE" />
 
         {!isEditing ? (
           <>
             <InfoRow label="Name" value={`${b.name} ${b.lastname}`} />
             <InfoRow label="Nickname" value={b.nickname} />
+            <InfoRow label="Gender" value={b.gender} />
             <InfoRow
               label="Date of birth"
               value={
@@ -154,47 +98,73 @@ export default function BasicInfoPage() {
                   : "-"
               }
             />
-            <InfoRow label="Gender" value={b.gender} />
+            <InfoRow label="Place of birth" value={b.placeOfBirth} />
           </>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <input
-              value={db.name ?? ""}
-              onChange={(e) => update("name", e.target.value)}
-              placeholder="First name"
-              style={inputStyle}
-            />
-            <input
-              value={db.lastname ?? ""}
-              onChange={(e) => update("lastname", e.target.value)}
-              placeholder="Last name"
-              style={inputStyle}
-            />
-            <input
-              value={db.nickname ?? ""}
-              onChange={(e) => update("nickname", e.target.value)}
-              placeholder="Nickname"
-              style={inputStyle}
-            />
-            <input
-              type="date"
-              value={db.dateOfBirth ?? ""}
-              onChange={(e) => update("dateOfBirth", e.target.value)}
-              style={inputStyle}
-            />
-            <select
-              value={db.gender ?? ""}
-              onChange={(e) => update("gender", e.target.value)}
-              style={inputStyle}
-            >
-              <option value="">Select gender</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Other</option>
-            </select>
+          <>
+            <input value={db.name ?? ""} onChange={(e) => update("name", e.target.value)} style={inputStyle} placeholder="First name" />
+            <input value={db.lastname ?? ""} onChange={(e) => update("lastname", e.target.value)} style={inputStyle} placeholder="Last name" />
+            <input value={db.nickname ?? ""} onChange={(e) => update("nickname", e.target.value)} style={inputStyle} placeholder="Nickname" />
+            <input type="date" value={db.dateOfBirth ?? ""} onChange={(e) => update("dateOfBirth", e.target.value)} style={inputStyle} />
+            <input value={db.placeOfBirth ?? ""} onChange={(e) => update("placeOfBirth", e.target.value)} style={inputStyle} placeholder="Place of birth" />
+          </>
+        )}
+      </Card>
+
+      {/* EXTRA NAME */}
+      <Card>
+        <SectionLabel emoji="📛" label="Other Names" color="#6366F1" bg="#EEF2FF" />
+
+        {!isEditing ? (
+          <>
+            <InfoRow label="Middle name" value={b.middleName} />
+            <InfoRow label="Saint name" value={b.saintName} />
+            <InfoRow label="Other name" value={b.otherName} />
+          </>
+        ) : (
+          <>
+            <input value={db.middleName ?? ""} onChange={(e) => update("middleName", e.target.value)} style={inputStyle} placeholder="Middle name" />
+            <input value={db.saintName ?? ""} onChange={(e) => update("saintName", e.target.value)} style={inputStyle} placeholder="Saint name" />
+            <input value={db.otherName ?? ""} onChange={(e) => update("otherName", e.target.value)} style={inputStyle} placeholder="Other name" />
+          </>
+        )}
+      </Card>
+
+      {/* FAMILY */}
+      <Card>
+        <SectionLabel emoji="👨‍👩‍👧" label="Family" color="#059669" bg="#ECFDF5" />
+
+        {!isEditing ? (
+          <>
+            <InfoRow label="Father" value={b.fatherName} />
+            <InfoRow label="Mother" value={b.motherName} />
+            <InfoRow label="Grandfather" value={b.grandfather} />
+            <InfoRow label="Grandmother" value={b.grandmother} />
+          </>
+        ) : (
+          <>
+            <input value={db.fatherName ?? ""} onChange={(e) => update("fatherName", e.target.value)} style={inputStyle} placeholder="Father" />
+            <input value={db.motherName ?? ""} onChange={(e) => update("motherName", e.target.value)} style={inputStyle} placeholder="Mother" />
+            <input value={db.grandfather ?? ""} onChange={(e) => update("grandfather", e.target.value)} style={inputStyle} placeholder="Grandfather" />
+            <input value={db.grandmother ?? ""} onChange={(e) => update("grandmother", e.target.value)} style={inputStyle} placeholder="Grandmother" />
+          </>
+        )}
+      </Card>
+
+      {/* ACTION */}
+      <Card>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} style={btnPrimary}>
+            Edit
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={save} style={btnSave}>Save</button>
+            <button onClick={cancel} style={btnCancel}>Cancel</button>
           </div>
         )}
       </Card>
+
     </div>
   );
 }
@@ -205,4 +175,26 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid #E5E7EB",
   borderRadius: 12,
   fontSize: 14,
+};
+
+const btnPrimary = {
+  background: "#7F77DD",
+  color: "#fff",
+  border: "none",
+  padding: "10px 14px",
+  borderRadius: 999,
+};
+
+const btnSave = {
+  background: "#1D9E75",
+  color: "#fff",
+  border: "none",
+  padding: "10px 14px",
+  borderRadius: 999,
+};
+
+const btnCancel = {
+  border: "1px solid #E5E7EB",
+  padding: "10px 14px",
+  borderRadius: 999,
 };

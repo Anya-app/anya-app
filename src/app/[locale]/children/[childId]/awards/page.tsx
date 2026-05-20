@@ -66,7 +66,6 @@ export default function AwardsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // ✅ ใช้ storage กลาง
   useEffect(() => {
     const found = getChildById(childId);
     if (found) setChild(found);
@@ -112,6 +111,8 @@ export default function AwardsPage() {
   }
 
   function saveAward() {
+    if (!child) return;
+
     if (!draftAward.awardName.trim()) {
       alert("Please enter award name.");
       return;
@@ -130,14 +131,12 @@ export default function AwardsPage() {
     };
 
     setChild(updatedChild);
-
-    // ✅ save ผ่าน helper
     saveChild(childId, updatedChild);
-
     cancelForm();
   }
 
   function deleteAward(id: string) {
+    if (!child) return;
     if (!confirm("Delete this award?")) return;
 
     const updatedChild: Child = {
@@ -147,12 +146,12 @@ export default function AwardsPage() {
     };
 
     setChild(updatedChild);
-
-    // ✅ save ผ่าน helper
     saveChild(childId, updatedChild);
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    if (!child) return;
+
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -176,8 +175,6 @@ export default function AwardsPage() {
       };
 
       setChild(updatedChild);
-
-      // ✅ save ผ่าน helper
       saveChild(childId, updatedChild);
     };
 
@@ -185,6 +182,8 @@ export default function AwardsPage() {
   }
 
   function exportJson() {
+    if (!child) return;
+
     const blob = new Blob([JSON.stringify(child, null, 2)], {
       type: "application/json",
     });

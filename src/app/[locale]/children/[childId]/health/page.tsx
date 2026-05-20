@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { Child } from "@/types";
+import { getChildById, saveChild } from "@/lib/childStorage";
 import {
   Card,
   SectionLabel,
   InfoRow,
-  EmptyState,
 } from "@/components/child/DetailPrimitives";
 
 const inputStyle = {
@@ -34,25 +34,12 @@ export default function HealthPage({
   const [draft, setDraft] = useState<Child | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // ✅ โหลด child จาก storage กลาง
+  // ✅ ใช้ storage กลาง
   useEffect(() => {
-    const single = localStorage.getItem(`child-${params.childId}`);
-
-    if (single) {
-      const parsed = JSON.parse(single) as Child;
-      setChild(parsed);
-      setDraft(parsed);
-      return;
-    }
-
-    const allRaw = localStorage.getItem("anya_children");
-    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-    const found = all.find((c) => c.id === params.childId);
-
+    const found = getChildById(params.childId);
     if (found) {
       setChild(found);
       setDraft(found);
-      localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
     }
   }, [params.childId]);
 
@@ -60,7 +47,6 @@ export default function HealthPage({
     return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  // ✅ FIX สำคัญ (ตัวที่หายไป)
   const h = child.health ?? {};
   const dh = draft.health ?? {};
   const m = h.measurements ?? {};
@@ -105,15 +91,8 @@ export default function HealthPage({
   function saveEdit() {
     if (!draft) return;
 
-    // ✅ save ทั้ง 2 ที่
-    localStorage.setItem(`child-${params.childId}`, JSON.stringify(draft));
-
-    const allRaw = localStorage.getItem("anya_children");
-    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-    const updatedAll = all.map((c) =>
-      c.id === params.childId ? draft : c
-    );
-    localStorage.setItem("anya_children", JSON.stringify(updatedAll));
+    // ✅ save ผ่าน helper กลาง
+    saveChild(params.childId, draft);
 
     setChild(draft);
     setIsEditing(false);
@@ -148,7 +127,9 @@ export default function HealthPage({
 
       setDraft(updated);
       setChild(updated);
-      localStorage.setItem(`child-${params.childId}`, JSON.stringify(updated));
+
+      // ✅ save ผ่าน helper
+      saveChild(params.childId, updated);
     };
 
     reader.readAsDataURL(file);
@@ -217,8 +198,15 @@ export default function HealthPage({
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>Weight<input type="number" style={inputStyle} value={dm.weight ?? ""} onChange={(e) => updateMeasurement("weight", e.target.value)} /></label>
-            <label style={labelStyle}>Height<input type="number" style={inputStyle} value={dm.height ?? ""} onChange={(e) => updateMeasurement("height", e.target.value)} /></label>
+            <label style={labelStyle}>
+              Weight
+              <input type="number" style={inputStyle} value={dm.weight ?? ""} onChange={(e) => updateMeasurement("weight", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Height
+              <input type="number" style={inputStyle} value={dm.height ?? ""} onChange={(e) => updateMeasurement("height", e.target.value)} />
+            </label>
           </div>
         )}
       </Card>

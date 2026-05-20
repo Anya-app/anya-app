@@ -72,23 +72,22 @@ export default function ActivitiesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`child-${childId}`);
-    if (saved) {
-      setChild(JSON.parse(saved) as Child);
-    }
-  }, [childId]);
+  const single = localStorage.getItem(`child-${childId}`);
 
-  if (!child) {
-    return <div style={{ padding: 16 }}>Child not found</div>;
+  if (single) {
+    setChild(JSON.parse(single) as Child);
+    return;
   }
 
-  const currentChild = child;
+  const allRaw = localStorage.getItem("anya_children");
+  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+  const found = all.find((c) => c.id === childId);
 
-  const activities = [...(currentChild.activities ?? [])].sort(
-    (a, b) =>
-      new Date(b.date || "1900-01-01").getTime() -
-      new Date(a.date || "1900-01-01").getTime()
-  );
+  if (found) {
+    setChild(found);
+    localStorage.setItem(`child-${childId}`, JSON.stringify(found));
+  }
+}, [childId]);
 
   function openAddForm() {
     setDraftActivity(makeEmptyActivity());

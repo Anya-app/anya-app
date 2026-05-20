@@ -57,23 +57,25 @@ export default function SchoolPage({
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`child-${params.childId}`);
-    if (saved) {
-      const parsed = JSON.parse(saved) as Child;
-      setChild(parsed);
-      setDraft(parsed);
-    }
-  }, [params.childId]);
+  const single = localStorage.getItem(`child-${params.childId}`);
 
-  if (!child || !draft) {
-    return <div style={{ padding: 16 }}>Child not found</div>;
+  if (single) {
+    const parsed = JSON.parse(single) as Child;
+    setChild(parsed);
+    setDraft(parsed);
+    return;
   }
 
-  const currentChild = child;
-  const currentDraft = draft;
+  const allRaw = localStorage.getItem("anya_children");
+  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
+  const found = all.find((c) => c.id === params.childId);
 
-  const displayRecord = currentChild.schoolRecords?.[0];
-  const editRecord = currentDraft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
+  if (found) {
+    setChild(found);
+    setDraft(found);
+    localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
+  }
+}, [params.childId]);
 
   function updateField(field: keyof SchoolRecord, value: string) {
     setDraft((prev) => {

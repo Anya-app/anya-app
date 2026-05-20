@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useParams } from "next/navigation";
-import type { Award, AwardLevel, Child } from "@/types";
+import type { Activity, Child } from "@/types";
 import {
   Card,
   SectionLabel,
@@ -28,18 +28,20 @@ const labelStyle = {
 };
 
 function makeId() {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
   return `${Date.now()}-${Math.random()}`;
 }
 
-function makeEmptyAward(): Award {
+function makeEmptyActivity(): Activity {
   return {
     id: makeId(),
-    awardName: "",
+    activityName: "",
     category: "",
     date: "",
-    organization: "",
-    level: "school",
+    endDate: "",
+    role: "",
     note: "",
   };
 }
@@ -47,73 +49,88 @@ function makeEmptyAward(): Award {
 function fmtDate(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function saveChild(childId: string, data: Child) {
   localStorage.setItem(`child-${childId}`, JSON.stringify(data));
 }
 
-export default function AwardsPage() {
+export default function ActivitiesPage() {
   const params = useParams<{ locale: string; childId: string }>();
   const childId = params.childId;
 
   const [child, setChild] = useState<Child | null>(null);
-  const [draftAward, setDraftAward] = useState<Award>(makeEmptyAward());
+  const [draftActivity, setDraftActivity] = useState<Activity>(
+    makeEmptyActivity()
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(`child-${childId}`);
-    if (saved) setChild(JSON.parse(saved) as Child);
+    if (saved) {
+      setChild(JSON.parse(saved) as Child);
+    }
   }, [childId]);
 
-  if (!child) return <div style={{ padding: 16 }}>Child not found</div>;
+  if (!child) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
+  }
 
-  const awards = [...(child.awards ?? [])].sort(
-    (a, b) => new Date(b.date || "1900-01-01").getTime() - new Date(a.date || "1900-01-01").getTime()
+  const currentChild = child;
+
+  const activities = [...(currentChild.activities ?? [])].sort(
+    (a, b) =>
+      new Date(b.date || "1900-01-01").getTime() -
+      new Date(a.date || "1900-01-01").getTime()
   );
 
   function openAddForm() {
-    setDraftAward(makeEmptyAward());
+    setDraftActivity(makeEmptyActivity());
     setEditingId(null);
     setIsFormOpen(true);
   }
 
-  function openEditForm(award: Award) {
-    setDraftAward({ ...award });
-    setEditingId(award.id);
+  function openEditForm(activity: Activity) {
+    setDraftActivity({ ...activity });
+    setEditingId(activity.id);
     setIsFormOpen(true);
   }
 
   function cancelForm() {
-    setDraftAward(makeEmptyAward());
+    setDraftActivity(makeEmptyActivity());
     setEditingId(null);
     setIsFormOpen(false);
   }
 
-  function updateField(field: keyof Award, value: string) {
-    setDraftAward((prev) => ({
+  function updateField(field: keyof Activity, value: string) {
+    setDraftActivity((prev) => ({
       ...prev,
-      [field]: field === "level" ? (value as AwardLevel) : value,
+      [field]: value,
     }));
   }
 
-  function saveAward() {
-    if (!draftAward.awardName.trim()) {
-      alert("Please enter award name.");
+  function saveActivity() {
+    if (!draftActivity.activityName.trim()) {
+      alert("Please enter activity name.");
       return;
     }
 
-    const existing = child.awards ?? [];
-    const updatedAwards = editingId
-      ? existing.map((a) => (a.id === editingId ? draftAward : a))
-      : [draftAward, ...existing];
+    const existing = currentChild.activities ?? [];
+
+    const updatedActivities = editingId
+      ? existing.map((a) => (a.id === editingId ? draftActivity : a))
+      : [draftActivity, ...existing];
 
     const updatedChild: Child = {
-      ...child,
+      ...currentChild,
       updatedAt: new Date().toISOString(),
-      awards: updatedAwards,
+      activities: updatedActivities,
     };
 
     setChild(updatedChild);
@@ -121,13 +138,13 @@ export default function AwardsPage() {
     cancelForm();
   }
 
-  function deleteAward(id: string) {
-    if (!confirm("Delete this award?")) return;
+  function deleteActivity(id: string) {
+    if (!confirm("Delete this activity?")) return;
 
     const updatedChild: Child = {
-      ...child,
+      ...currentChild,
       updatedAt: new Date().toISOString(),
-      awards: (child.awards ?? []).filter((a) => a.id !== id),
+      activities: (currentChild.activities ?? []).filter((a) => a.id !== id),
     };
 
     setChild(updatedChild);
@@ -142,13 +159,13 @@ export default function AwardsPage() {
 
     reader.onload = () => {
       const updatedChild: Child = {
-        ...child,
+        ...currentChild,
         updatedAt: new Date().toISOString(),
         attachments: [
-          ...(child.attachments ?? []),
+          ...(currentChild.attachments ?? []),
           {
             id: makeId(),
-            section: "awards",
+            section: "activities",
             name: file.name,
             type: file.type,
             dataUrl: reader.result as string,
@@ -165,30 +182,35 @@ export default function AwardsPage() {
   }
 
   function exportJson() {
-    const blob = new Blob([JSON.stringify(child, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(currentChild, null, 2)], {
+      type: "application/json",
+    });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${child.basicInfo?.name ?? "child"}-awards.json`;
+    a.download = `${currentChild.basicInfo?.name ?? "child"}-activities.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  const awardFiles = (child.attachments ?? []).filter((a) => a.section === "awards");
+  const activityFiles = (currentChild.attachments ?? []).filter(
+    (a) => a.section === "activities"
+  );
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <SectionLabel emoji="🏆" label="Awards" color="#BA7517" bg="#FAEEDA" />
-          <button onClick={openAddForm} style={{ border: "none", background: "#BA7517", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+          <SectionLabel emoji="🎨" label="Activities" color="#2563EB" bg="#DBEAFE" />
+          <button onClick={openAddForm} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
             + Add
           </button>
         </div>
 
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
-            Upload Award File
+            Upload Activity File
             <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
           </label>
 
@@ -200,29 +222,41 @@ export default function AwardsPage() {
 
       {isFormOpen && (
         <Card>
-          <SectionLabel emoji="✏️" label={editingId ? "Edit Award" : "Add Award"} color="#BA7517" bg="#FAEEDA" />
+          <SectionLabel emoji="✏️" label={editingId ? "Edit Activity" : "Add Activity"} color="#2563EB" bg="#DBEAFE" />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>Award Name<input style={inputStyle} value={draftAward.awardName} onChange={(e) => updateField("awardName", e.target.value)} /></label>
-            <label style={labelStyle}>Category<input style={inputStyle} value={draftAward.category ?? ""} onChange={(e) => updateField("category", e.target.value)} /></label>
-            <label style={labelStyle}>Date<input type="date" style={inputStyle} value={draftAward.date ?? ""} onChange={(e) => updateField("date", e.target.value)} /></label>
-            <label style={labelStyle}>Organization<input style={inputStyle} value={draftAward.organization ?? ""} onChange={(e) => updateField("organization", e.target.value)} /></label>
-
-            <label style={labelStyle}>Level
-              <select style={inputStyle} value={draftAward.level ?? "school"} onChange={(e) => updateField("level", e.target.value)}>
-                <option value="school">School</option>
-                <option value="district">District</option>
-                <option value="province">Province</option>
-                <option value="national">National</option>
-                <option value="international">International</option>
-                <option value="other">Other</option>
-              </select>
+            <label style={labelStyle}>
+              Activity Name
+              <input style={inputStyle} value={draftActivity.activityName} onChange={(e) => updateField("activityName", e.target.value)} />
             </label>
 
-            <label style={labelStyle}>Note<textarea style={{ ...inputStyle, minHeight: 90 }} value={draftAward.note ?? ""} onChange={(e) => updateField("note", e.target.value)} /></label>
+            <label style={labelStyle}>
+              Category
+              <input style={inputStyle} value={draftActivity.category ?? ""} onChange={(e) => updateField("category", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Start Date
+              <input type="date" style={inputStyle} value={draftActivity.date ?? ""} onChange={(e) => updateField("date", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              End Date
+              <input type="date" style={inputStyle} value={draftActivity.endDate ?? ""} onChange={(e) => updateField("endDate", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Role
+              <input style={inputStyle} value={draftActivity.role ?? ""} onChange={(e) => updateField("role", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Note
+              <textarea style={{ ...inputStyle, minHeight: 90 }} value={draftActivity.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
+            </label>
 
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={saveAward} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+              <button onClick={saveActivity} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
                 Save
               </button>
               <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
@@ -233,21 +267,21 @@ export default function AwardsPage() {
         </Card>
       )}
 
-      {awards.length > 0 ? (
-        awards.map((a) => (
+      {activities.length > 0 ? (
+        activities.map((a) => (
           <Card key={a.id}>
-            <SectionLabel emoji="🏅" label={a.awardName || "Untitled Award"} color="#BA7517" bg="#FAEEDA" />
+            <SectionLabel emoji="🌟" label={a.activityName || "Untitled Activity"} color="#2563EB" bg="#DBEAFE" />
             <InfoRow label="Category" value={a.category || "Not recorded"} />
             <InfoRow label="Date" value={fmtDate(a.date) || "Not recorded"} />
-            <InfoRow label="Organization" value={a.organization || "Not recorded"} />
-            <InfoRow label="Level" value={a.level || "Not recorded"} />
+            <InfoRow label="End Date" value={fmtDate(a.endDate) || "Not recorded"} />
+            <InfoRow label="Role" value={a.role || "Not recorded"} />
             <InfoRow label="Note" value={a.note || "Not recorded"} />
 
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#BA7517", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+              <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
                 Edit
               </button>
-              <button onClick={() => deleteAward(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
+              <button onClick={() => deleteActivity(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
                 Delete
               </button>
             </div>
@@ -255,18 +289,18 @@ export default function AwardsPage() {
         ))
       ) : (
         <Card>
-          <EmptyState emoji="🏆" message="No awards recorded yet." />
+          <EmptyState emoji="🎨" message="No activities recorded yet." />
         </Card>
       )}
 
       <Card>
-        <SectionLabel emoji="📎" label="Award Attachments" color="#1D9E75" bg="#E1F5EE" />
-        {awardFiles.length > 0 ? (
-          awardFiles.map((a) => (
+        <SectionLabel emoji="📎" label="Activity Attachments" color="#1D9E75" bg="#E1F5EE" />
+        {activityFiles.length > 0 ? (
+          activityFiles.map((a) => (
             <InfoRow key={a.id} label="File" value={<a href={a.dataUrl} download={a.name}>📎 {a.name}</a>} />
           ))
         ) : (
-          <EmptyState emoji="📎" message="No award files uploaded yet." />
+          <EmptyState emoji="📎" message="No activity files uploaded yet." />
         )}
       </Card>
     </div>

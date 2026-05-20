@@ -13,7 +13,7 @@ export default async function ChildLayout({
   return (
     <>
       <ChildTabBarServer childId={childId} locale={locale} />
-      <div style={{ padding: 0 }}>{children}</div>
+      <div style={{ padding: "0" }}>{children}</div>
     </>
   );
 }

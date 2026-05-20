@@ -4,11 +4,11 @@ import { useParams } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { useEffect, useState } from "react";
 import { calcAge, type Child } from "@/types";
+import { saveChild } from "@/lib/childStorage";
 import {
   Card,
   SectionLabel,
   InfoRow,
-  EmptyState,
 } from "@/components/child/DetailPrimitives";
 
 function fmtDate(iso: string): string {
@@ -48,12 +48,44 @@ export default function BasicInfoPage() {
   function update(field: string, value: string) {
     setDraft((prev) => {
       if (!prev) return prev;
+
+      const nextBasicInfo = {
+        ...prev.basicInfo,
+        [field]: value,
+      };
+
+      const firstName =
+        field === "name"
+          ? value.trim() || "New Child"
+          : nextBasicInfo.name || "New Child";
+
+      const lastName =
+        field === "lastname"
+          ? value.trim()
+          : nextBasicInfo.lastname || "";
+
       return {
         ...prev,
         updatedAt: new Date().toISOString(),
         basicInfo: {
-          ...prev.basicInfo,
-          [field]: value,
+          ...nextBasicInfo,
+          name: firstName,
+          lastname: lastName,
+          names: {
+            ...nextBasicInfo.names,
+            th: {
+              ...nextBasicInfo.names?.th,
+              firstName,
+              lastName,
+              fullName: `${firstName} ${lastName}`.trim(),
+            },
+            en: {
+              ...nextBasicInfo.names?.en,
+              firstName,
+              lastName,
+              fullName: `${firstName} ${lastName}`.trim(),
+            },
+          },
         },
       };
     });
@@ -62,6 +94,10 @@ export default function BasicInfoPage() {
   function save() {
     if (!draft) return;
 
+    // ✅ save localStorage
+    saveChild(draft.id, draft);
+
+    // ✅ update state
     setChildren((prev: Child[]) =>
       prev.map((c) => (c.id === draft.id ? draft : c))
     );

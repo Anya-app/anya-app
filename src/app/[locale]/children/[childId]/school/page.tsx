@@ -65,10 +65,15 @@ export default function SchoolPage({
     }
   }, [params.childId]);
 
-  if (!child || !draft) return <div style={{ padding: 16 }}>Child not found</div>;
+  if (!child || !draft) {
+    return <div style={{ padding: 16 }}>Child not found</div>;
+  }
 
-  const displayRecord = child.schoolRecords?.[0];
-  const editRecord = draft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
+  const currentChild = child;
+  const currentDraft = draft;
+
+  const displayRecord = currentChild.schoolRecords?.[0];
+  const editRecord = currentDraft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
 
   function updateField(field: keyof SchoolRecord, value: string) {
     setDraft((prev) => {
@@ -78,6 +83,7 @@ export default function SchoolPage({
       const base = existing[0] ?? makeEmptySchoolRecord();
 
       let nextValue: string | number | undefined = value;
+
       if (field === "number") nextValue = value === "" ? undefined : Number(value);
       if (field === "schoolLevel") nextValue = value as SchoolLevel;
       if (field === "term") nextValue = value as Term;
@@ -96,29 +102,28 @@ export default function SchoolPage({
   }
 
   function saveEdit() {
-    if (!draft) return;
-    saveChild(params.childId, draft);
-    setChild(draft);
+    saveChild(params.childId, currentDraft);
+    setChild(currentDraft);
     setIsEditing(false);
   }
 
   function cancelEdit() {
-    setDraft(child);
+    setDraft(currentChild);
     setIsEditing(false);
   }
 
   function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file || !draft) return;
+    if (!file) return;
 
     const reader = new FileReader();
 
     reader.onload = () => {
       const updated: Child = {
-        ...draft,
+        ...currentDraft,
         updatedAt: new Date().toISOString(),
         attachments: [
-          ...(draft.attachments ?? []),
+          ...(currentDraft.attachments ?? []),
           {
             id: makeId(),
             section: "school",
@@ -138,7 +143,9 @@ export default function SchoolPage({
     reader.readAsDataURL(file);
   }
 
-  const schoolFiles = (child.attachments ?? []).filter((a) => a.section === "school");
+  const schoolFiles = (currentChild.attachments ?? []).filter(
+    (a) => a.section === "school"
+  );
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -185,8 +192,13 @@ export default function SchoolPage({
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>School<input style={inputStyle} value={editRecord.schoolName ?? ""} onChange={(e) => updateField("schoolName", e.target.value)} /></label>
-            <label style={labelStyle}>School Level
+            <label style={labelStyle}>
+              School
+              <input style={inputStyle} value={editRecord.schoolName ?? ""} onChange={(e) => updateField("schoolName", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              School Level
               <select style={inputStyle} value={editRecord.schoolLevel} onChange={(e) => updateField("schoolLevel", e.target.value)}>
                 <option value="kindergarten">Kindergarten</option>
                 <option value="primary">Primary</option>
@@ -194,9 +206,19 @@ export default function SchoolPage({
                 <option value="university">University</option>
               </select>
             </label>
-            <label style={labelStyle}>Student ID<input style={inputStyle} value={editRecord.studentId ?? ""} onChange={(e) => updateField("studentId", e.target.value)} /></label>
-            <label style={labelStyle}>Academic Year<input style={inputStyle} value={editRecord.academicYear ?? ""} onChange={(e) => updateField("academicYear", e.target.value)} /></label>
-            <label style={labelStyle}>Term
+
+            <label style={labelStyle}>
+              Student ID
+              <input style={inputStyle} value={editRecord.studentId ?? ""} onChange={(e) => updateField("studentId", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Academic Year
+              <input style={inputStyle} value={editRecord.academicYear ?? ""} onChange={(e) => updateField("academicYear", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Term
               <select style={inputStyle} value={editRecord.term} onChange={(e) => updateField("term", e.target.value)}>
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -205,17 +227,34 @@ export default function SchoolPage({
                 <option value="special">Special</option>
               </select>
             </label>
-            <label style={labelStyle}>Room<input style={inputStyle} value={editRecord.room ?? ""} onChange={(e) => updateField("room", e.target.value)} /></label>
-            <label style={labelStyle}>Number<input type="number" style={inputStyle} value={editRecord.number ?? ""} onChange={(e) => updateField("number", e.target.value)} /></label>
+
+            <label style={labelStyle}>
+              Room
+              <input style={inputStyle} value={editRecord.room ?? ""} onChange={(e) => updateField("room", e.target.value)} />
+            </label>
+
+            <label style={labelStyle}>
+              Number
+              <input type="number" style={inputStyle} value={editRecord.number ?? ""} onChange={(e) => updateField("number", e.target.value)} />
+            </label>
           </div>
         )}
       </Card>
 
       <Card>
         <SectionLabel emoji="📎" label="School Attachments" color="#1D9E75" bg="#E1F5EE" />
+
         {schoolFiles.length > 0 ? (
           schoolFiles.map((a) => (
-            <InfoRow key={a.id} label="File" value={<a href={a.dataUrl} download={a.name}>📎 {a.name}</a>} />
+            <InfoRow
+              key={a.id}
+              label="File"
+              value={
+                <a href={a.dataUrl} download={a.name}>
+                  📎 {a.name}
+                </a>
+              }
+            />
           ))
         ) : (
           <EmptyState emoji="📎" message="No school files uploaded yet." />

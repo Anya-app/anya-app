@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Child, SchoolRecord, SchoolLevel, Term } from "@/types";
+import { getChildById, saveChild } from "@/lib/childStorage";
 import {
   Card,
   SectionLabel,
@@ -45,25 +46,6 @@ function makeEmptySchoolRecord(): SchoolRecord {
   };
 }
 
-function saveChildEverywhere(childId: string, data: Child) {
-  const updatedChild: Child = {
-    ...data,
-    updatedAt: new Date().toISOString(),
-  };
-
-  localStorage.setItem(`child-${childId}`, JSON.stringify(updatedChild));
-
-  const allRaw = localStorage.getItem("anya_children");
-  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-  const exists = all.some((c) => c.id === childId);
-
-  const updatedAll = exists
-    ? all.map((c) => (c.id === childId ? updatedChild : c))
-    : [updatedChild, ...all];
-
-  localStorage.setItem("anya_children", JSON.stringify(updatedAll));
-}
-
 export default function SchoolPage({
   params,
 }: {
@@ -73,24 +55,12 @@ export default function SchoolPage({
   const [draft, setDraft] = useState<Child | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // ✅ ใช้ helper กลาง
   useEffect(() => {
-    const single = localStorage.getItem(`child-${params.childId}`);
-
-    if (single) {
-      const parsed = JSON.parse(single) as Child;
-      setChild(parsed);
-      setDraft(parsed);
-      return;
-    }
-
-    const allRaw = localStorage.getItem("anya_children");
-    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-    const found = all.find((c) => c.id === params.childId);
-
+    const found = getChildById(params.childId);
     if (found) {
       setChild(found);
       setDraft(found);
-      localStorage.setItem(`child-${params.childId}`, JSON.stringify(found));
     }
   }, [params.childId]);
 
@@ -98,15 +68,11 @@ export default function SchoolPage({
     return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  // ✅ FIX สำคัญ
-  const currentChild = child;
-  const currentDraft = draft;
-
-  const displayRecord = currentChild.schoolRecords?.[0];
+  const displayRecord = child.schoolRecords?.[0];
   const editRecord =
-    currentDraft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
+    draft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
 
-  const schoolFiles = (currentChild.attachments ?? []).filter(
+  const schoolFiles = (child.attachments ?? []).filter(
     (a) => a.section === "school"
   );
 
@@ -145,27 +111,32 @@ export default function SchoolPage({
   }
 
   function saveEdit() {
-    saveChildEverywhere(params.childId, currentDraft);
-    setChild(currentDraft);
+    if (!draft) return;
+
+    // ✅ save ผ่าน helper กลาง
+    saveChild(params.childId, draft);
+
+    setChild(draft);
     setIsEditing(false);
   }
 
   function cancelEdit() {
-    setDraft(currentChild);
+    setDraft(child);
     setIsEditing(false);
   }
 
   function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !draft) return;
 
     const reader = new FileReader();
 
     reader.onload = () => {
       const updated: Child = {
-        ...currentDraft,
+        ...draft,
+        updatedAt: new Date().toISOString(),
         attachments: [
-          ...(currentDraft.attachments ?? []),
+          ...(draft.attachments ?? []),
           {
             id: makeId(),
             section: "school",
@@ -179,7 +150,9 @@ export default function SchoolPage({
 
       setChild(updated);
       setDraft(updated);
-      saveChildEverywhere(params.childId, updated);
+
+      // ✅ save ผ่าน helper
+      saveChild(params.childId, updated);
     };
 
     reader.readAsDataURL(file);
@@ -231,21 +204,31 @@ export default function SchoolPage({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
             <label style={labelStyle}>School<input style={inputStyle} value={editRecord.schoolName ?? ""} onChange={(e) => updateField("schoolName", e.target.value)} /></label>
-            <label style={labelStyle}>School Level<select style={inputStyle} value={editRecord.schoolLevel} onChange={(e) => updateField("schoolLevel", e.target.value)}>
-              <option value="kindergarten">Kindergarten</option>
-              <option value="primary">Primary</option>
-              <option value="secondary">Secondary</option>
-              <option value="university">University</option>
-            </select></label>
+
+            <label style={labelStyle}>
+              School Level
+              <select style={inputStyle} value={editRecord.schoolLevel} onChange={(e) => updateField("schoolLevel", e.target.value)}>
+                <option value="kindergarten">Kindergarten</option>
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="university">University</option>
+              </select>
+            </label>
+
             <label style={labelStyle}>Student ID<input style={inputStyle} value={editRecord.studentId ?? ""} onChange={(e) => updateField("studentId", e.target.value)} /></label>
             <label style={labelStyle}>Academic Year<input style={inputStyle} value={editRecord.academicYear ?? ""} onChange={(e) => updateField("academicYear", e.target.value)} /></label>
-            <label style={labelStyle}>Term<select style={inputStyle} value={editRecord.term} onChange={(e) => updateField("term", e.target.value)}>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="summer">Summer</option>
-              <option value="special">Special</option>
-            </select></label>
+
+            <label style={labelStyle}>
+              Term
+              <select style={inputStyle} value={editRecord.term} onChange={(e) => updateField("term", e.target.value)}>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="summer">Summer</option>
+                <option value="special">Special</option>
+              </select>
+            </label>
+
             <label style={labelStyle}>Room<input style={inputStyle} value={editRecord.room ?? ""} onChange={(e) => updateField("room", e.target.value)} /></label>
             <label style={labelStyle}>Number<input type="number" style={inputStyle} value={editRecord.number ?? ""} onChange={(e) => updateField("number", e.target.value)} /></label>
           </div>

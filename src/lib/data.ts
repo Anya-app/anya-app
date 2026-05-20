@@ -85,7 +85,7 @@ export const mockAppData: AppData = {
         {
           id: "school-001-a",
           showPresentYearFirst: true,
-          schoolLevel: "school level",
+          schoolLevel: "primary",
           schoolName: "schoolname",
           studentId: "number",
           academicYear: "2569",

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useParams } from "next/navigation";
 import type { Award, AwardLevel, Child } from "@/types";
+import { getChildById, saveChild } from "@/lib/childStorage";
 import {
   Card,
   SectionLabel,
@@ -56,25 +57,6 @@ function fmtDate(iso?: string) {
   });
 }
 
-function saveChildEverywhere(childId: string, data: Child) {
-  const updatedChild: Child = {
-    ...data,
-    updatedAt: new Date().toISOString(),
-  };
-
-  localStorage.setItem(`child-${childId}`, JSON.stringify(updatedChild));
-
-  const allRaw = localStorage.getItem("anya_children");
-  const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-  const exists = all.some((c) => c.id === childId);
-
-  const updatedAll = exists
-    ? all.map((c) => (c.id === childId ? updatedChild : c))
-    : [updatedChild, ...all];
-
-  localStorage.setItem("anya_children", JSON.stringify(updatedAll));
-}
-
 export default function AwardsPage() {
   const params = useParams<{ locale: string; childId: string }>();
   const childId = params.childId;
@@ -84,37 +66,23 @@ export default function AwardsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
+  // ✅ ใช้ storage กลาง
   useEffect(() => {
-    const single = localStorage.getItem(`child-${childId}`);
-
-    if (single) {
-      setChild(JSON.parse(single) as Child);
-      return;
-    }
-
-    const allRaw = localStorage.getItem("anya_children");
-    const all = allRaw ? (JSON.parse(allRaw) as Child[]) : [];
-    const found = all.find((c) => c.id === childId);
-
-    if (found) {
-      setChild(found);
-      localStorage.setItem(`child-${childId}`, JSON.stringify(found));
-    }
+    const found = getChildById(childId);
+    if (found) setChild(found);
   }, [childId]);
 
   if (!child) {
     return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
-  const currentChild = child;
-
-  const awards = [...(currentChild.awards ?? [])].sort(
+  const awards = [...(child.awards ?? [])].sort(
     (a, b) =>
       new Date(b.date || "1900-01-01").getTime() -
       new Date(a.date || "1900-01-01").getTime()
   );
 
-  const awardFiles = (currentChild.attachments ?? []).filter(
+  const awardFiles = (child.attachments ?? []).filter(
     (a) => a.section === "awards"
   );
 
@@ -149,19 +117,23 @@ export default function AwardsPage() {
       return;
     }
 
-    const existing = currentChild.awards ?? [];
+    const existing = child.awards ?? [];
 
     const updatedAwards = editingId
       ? existing.map((a) => (a.id === editingId ? draftAward : a))
       : [draftAward, ...existing];
 
     const updatedChild: Child = {
-      ...currentChild,
+      ...child,
+      updatedAt: new Date().toISOString(),
       awards: updatedAwards,
     };
 
-    setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
-    saveChildEverywhere(childId, updatedChild);
+    setChild(updatedChild);
+
+    // ✅ save ผ่าน helper
+    saveChild(childId, updatedChild);
+
     cancelForm();
   }
 
@@ -169,12 +141,15 @@ export default function AwardsPage() {
     if (!confirm("Delete this award?")) return;
 
     const updatedChild: Child = {
-      ...currentChild,
-      awards: (currentChild.awards ?? []).filter((a) => a.id !== id),
+      ...child,
+      updatedAt: new Date().toISOString(),
+      awards: (child.awards ?? []).filter((a) => a.id !== id),
     };
 
-    setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
-    saveChildEverywhere(childId, updatedChild);
+    setChild(updatedChild);
+
+    // ✅ save ผ่าน helper
+    saveChild(childId, updatedChild);
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -185,9 +160,10 @@ export default function AwardsPage() {
 
     reader.onload = () => {
       const updatedChild: Child = {
-        ...currentChild,
+        ...child,
+        updatedAt: new Date().toISOString(),
         attachments: [
-          ...(currentChild.attachments ?? []),
+          ...(child.attachments ?? []),
           {
             id: makeId(),
             section: "awards",
@@ -199,22 +175,24 @@ export default function AwardsPage() {
         ],
       };
 
-      setChild({ ...updatedChild, updatedAt: new Date().toISOString() });
-      saveChildEverywhere(childId, updatedChild);
+      setChild(updatedChild);
+
+      // ✅ save ผ่าน helper
+      saveChild(childId, updatedChild);
     };
 
     reader.readAsDataURL(file);
   }
 
   function exportJson() {
-    const blob = new Blob([JSON.stringify(currentChild, null, 2)], {
+    const blob = new Blob([JSON.stringify(child, null, 2)], {
       type: "application/json",
     });
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${currentChild.basicInfo?.name ?? "child"}-awards.json`;
+    a.download = `${child.basicInfo?.name ?? "child"}-awards.json`;
     a.click();
     URL.revokeObjectURL(url);
   }

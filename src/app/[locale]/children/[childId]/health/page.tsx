@@ -93,11 +93,13 @@ export default function HealthPage() {
     });
   }
 
-  function saveEdit() {
-    saveChild(childId, draft);
-    setChild(draft);
-    setIsEditing(false);
-  }
+ function saveEdit() {
+  if (!draft) return;
+
+  saveChild(childId, draft);
+  setChild(draft);
+  setIsEditing(false);
+}
 
   function cancelEdit() {
     setDraft(child);

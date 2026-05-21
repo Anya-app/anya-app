@@ -163,3 +163,31 @@ export function exportSingleChildJson(childId: string): void {
   a.click();
   URL.revokeObjectURL(url);
 }
+export function exportSingleChildJson(childId: string): void {
+  if (typeof window === "undefined") return;
+
+  const child = getChildById(childId);
+
+  if (!child) {
+    alert("Child not found");
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(child, null, 2)], {
+    type: "application/json",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  const safeName = child.basicInfo?.name || "child";
+
+  a.href = url;
+  a.download = `anya-child-${safeName}-${new Date()
+    .toISOString()
+    .slice(0, 10)}.json`;
+
+  a.click();
+  URL.revokeObjectURL(url);
+}
+

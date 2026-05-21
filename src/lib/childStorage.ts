@@ -81,3 +81,58 @@ export function deleteChild(childId: string): void {
 
   localStorage.setItem(CHILDREN_STORAGE_KEY, JSON.stringify(updatedAll));
 }
+
+export function exportChildrenJson(): void {
+  if (typeof window === "undefined") return;
+
+  const children = getAllChildren();
+
+  const blob = new Blob([JSON.stringify(children, null, 2)], {
+    type: "application/json",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = `anya-children-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+export function importChildrenJson(file: File): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") {
+      reject(new Error("Browser only"));
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result));
+
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid backup file");
+        }
+
+        localStorage.setItem(CHILDREN_STORAGE_KEY, JSON.stringify(data));
+
+        data.forEach((child: Child) => {
+          if (child?.id) {
+            localStorage.setItem(`child-${child.id}`, JSON.stringify(child));
+          }
+        });
+
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Child, SchoolRecord, SchoolLevel, Term } from "@/types";
+import { useParams } from "next/navigation";
+import type { ChangeEvent } from "react";
+import type { Child, SchoolLevel, SchoolRecord, Term } from "@/types";
 import { getChildById, saveChild } from "@/lib/childStorage";
 import {
   Card,
@@ -26,6 +28,17 @@ const labelStyle = {
   color: "#6B7280",
 };
 
+const bottomButtonStyle = {
+  width: "100%",
+  border: "none",
+  background: "#7F77DD",
+  color: "white",
+  padding: "12px 14px",
+  borderRadius: 999,
+  fontSize: 15,
+  fontWeight: 700,
+};
+
 function makeId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -46,31 +59,28 @@ function makeEmptySchoolRecord(): SchoolRecord {
   };
 }
 
-export default function SchoolPage({
-  params,
-}: {
-  params: { locale: string; childId: string };
-}) {
+export default function SchoolPage() {
+  const params = useParams<{ locale: string; childId: string }>();
+  const childId = params.childId;
+
   const [child, setChild] = useState<Child | null>(null);
   const [draft, setDraft] = useState<Child | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // ✅ ใช้ helper กลาง
   useEffect(() => {
-    const found = getChildById(params.childId);
+    const found = getChildById(childId);
     if (found) {
       setChild(found);
       setDraft(found);
     }
-  }, [params.childId]);
+  }, [childId]);
 
   if (!child || !draft) {
     return <div style={{ padding: 16 }}>Child not found</div>;
   }
 
   const displayRecord = child.schoolRecords?.[0];
-  const editRecord =
-    draft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
+  const editRecord = draft.schoolRecords?.[0] ?? makeEmptySchoolRecord();
 
   const schoolFiles = (child.attachments ?? []).filter(
     (a) => a.section === "school"
@@ -111,11 +121,7 @@ export default function SchoolPage({
   }
 
   function saveEdit() {
-    if (!draft) return;
-
-    // ✅ save ผ่าน helper กลาง
-    saveChild(params.childId, draft);
-
+    saveChild(childId, draft);
     setChild(draft);
     setIsEditing(false);
   }
@@ -125,7 +131,7 @@ export default function SchoolPage({
     setIsEditing(false);
   }
 
-  function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !draft) return;
 
@@ -150,38 +156,35 @@ export default function SchoolPage({
 
       setChild(updated);
       setDraft(updated);
-
-      // ✅ save ผ่าน helper
-      saveChild(params.childId, updated);
+      saveChild(childId, updated);
     };
 
     reader.readAsDataURL(file);
   }
 
   return (
-    <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div
+      style={{
+        padding: "14px 16px 120px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <SectionLabel emoji="🏫" label="School" color="#7F77DD" bg="#EEEDFE" />
-
-          {!isEditing ? (
-            <button onClick={() => setIsEditing(true)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-              Edit
-            </button>
-          ) : (
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={saveEdit} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-                Save
-              </button>
-              <button onClick={cancelEdit} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
+        <SectionLabel emoji="🏫" label="School" color="#7F77DD" bg="#EEEDFE" />
 
         <div style={{ marginTop: 12 }}>
-          <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
+          <label
+            style={{
+              background: "#E1F5EE",
+              color: "#1D9E75",
+              padding: "8px 12px",
+              borderRadius: 999,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Upload School File
             <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
           </label>
@@ -203,11 +206,22 @@ export default function SchoolPage({
           </>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>School<input style={inputStyle} value={editRecord.schoolName ?? ""} onChange={(e) => updateField("schoolName", e.target.value)} /></label>
+            <label style={labelStyle}>
+              School
+              <input
+                style={inputStyle}
+                value={editRecord.schoolName ?? ""}
+                onChange={(e) => updateField("schoolName", e.target.value)}
+              />
+            </label>
 
             <label style={labelStyle}>
               School Level
-              <select style={inputStyle} value={editRecord.schoolLevel} onChange={(e) => updateField("schoolLevel", e.target.value)}>
+              <select
+                style={inputStyle}
+                value={editRecord.schoolLevel}
+                onChange={(e) => updateField("schoolLevel", e.target.value)}
+              >
                 <option value="kindergarten">Kindergarten</option>
                 <option value="primary">Primary</option>
                 <option value="secondary">Secondary</option>
@@ -215,12 +229,31 @@ export default function SchoolPage({
               </select>
             </label>
 
-            <label style={labelStyle}>Student ID<input style={inputStyle} value={editRecord.studentId ?? ""} onChange={(e) => updateField("studentId", e.target.value)} /></label>
-            <label style={labelStyle}>Academic Year<input style={inputStyle} value={editRecord.academicYear ?? ""} onChange={(e) => updateField("academicYear", e.target.value)} /></label>
+            <label style={labelStyle}>
+              Student ID
+              <input
+                style={inputStyle}
+                value={editRecord.studentId ?? ""}
+                onChange={(e) => updateField("studentId", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Academic Year
+              <input
+                style={inputStyle}
+                value={editRecord.academicYear ?? ""}
+                onChange={(e) => updateField("academicYear", e.target.value)}
+              />
+            </label>
 
             <label style={labelStyle}>
               Term
-              <select style={inputStyle} value={editRecord.term} onChange={(e) => updateField("term", e.target.value)}>
+              <select
+                style={inputStyle}
+                value={editRecord.term}
+                onChange={(e) => updateField("term", e.target.value)}
+              >
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -229,8 +262,24 @@ export default function SchoolPage({
               </select>
             </label>
 
-            <label style={labelStyle}>Room<input style={inputStyle} value={editRecord.room ?? ""} onChange={(e) => updateField("room", e.target.value)} /></label>
-            <label style={labelStyle}>Number<input type="number" style={inputStyle} value={editRecord.number ?? ""} onChange={(e) => updateField("number", e.target.value)} /></label>
+            <label style={labelStyle}>
+              Room
+              <input
+                style={inputStyle}
+                value={editRecord.room ?? ""}
+                onChange={(e) => updateField("room", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Number
+              <input
+                type="number"
+                style={inputStyle}
+                value={editRecord.number ?? ""}
+                onChange={(e) => updateField("number", e.target.value)}
+              />
+            </label>
           </div>
         )}
       </Card>
@@ -240,10 +289,44 @@ export default function SchoolPage({
 
         {schoolFiles.length > 0 ? (
           schoolFiles.map((a) => (
-            <InfoRow key={a.id} label="File" value={<a href={a.dataUrl} download={a.name}>📎 {a.name}</a>} />
+            <InfoRow
+              key={a.id}
+              label="File"
+              value={
+                <a href={a.dataUrl} download={a.name}>
+                  📎 {a.name}
+                </a>
+              }
+            />
           ))
         ) : (
           <EmptyState emoji="📎" message="No school files uploaded yet." />
+        )}
+      </Card>
+
+      <Card>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} style={bottomButtonStyle}>
+            Edit School
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={saveEdit} style={{ ...bottomButtonStyle, background: "#1D9E75" }}>
+              Save
+            </button>
+
+            <button
+              onClick={cancelEdit}
+              style={{
+                ...bottomButtonStyle,
+                background: "white",
+                color: "#6B7280",
+                border: "1px solid #E5E7EB",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         )}
       </Card>
     </div>

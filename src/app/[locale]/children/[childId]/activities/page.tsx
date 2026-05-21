@@ -28,6 +28,17 @@ const labelStyle = {
   color: "#6B7280",
 };
 
+const bottomButtonStyle = {
+  width: "100%",
+  border: "none",
+  background: "#7F77DD",
+  color: "white",
+  padding: "12px 14px",
+  borderRadius: 999,
+  fontSize: 15,
+  fontWeight: 700,
+};
+
 function makeId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -62,9 +73,7 @@ export default function ActivitiesPage() {
   const childId = params.childId;
 
   const [child, setChild] = useState<Child | null>(null);
-  const [draftActivity, setDraftActivity] = useState<Activity>(
-    makeEmptyActivity()
-  );
+  const [draftActivity, setDraftActivity] = useState<Activity>(makeEmptyActivity());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -91,12 +100,18 @@ export default function ActivitiesPage() {
     setDraftActivity(makeEmptyActivity());
     setEditingId(null);
     setIsFormOpen(true);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 50);
   }
 
   function openEditForm(activity: Activity) {
     setDraftActivity({ ...activity });
     setEditingId(activity.id);
     setIsFormOpen(true);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 50);
   }
 
   function cancelForm() {
@@ -134,13 +149,11 @@ export default function ActivitiesPage() {
 
     setChild(updatedChild);
     saveChild(childId, updatedChild);
-
     cancelForm();
   }
 
   function deleteActivity(id: string) {
     if (!child) return;
-
     if (!confirm("Delete this activity?")) return;
 
     const updatedChild: Child = {
@@ -201,80 +214,56 @@ export default function ActivitiesPage() {
   }
 
   return (
-    <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div
+      style={{
+        padding: "14px 16px 120px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <SectionLabel emoji="🎨" label="Activities" color="#2563EB" bg="#DBEAFE" />
-
-          <button onClick={openAddForm} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-            + Add
-          </button>
-        </div>
+        <SectionLabel emoji="🎨" label="Activities" color="#2563EB" bg="#DBEAFE" />
 
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
+          <label
+            style={{
+              background: "#E1F5EE",
+              color: "#1D9E75",
+              padding: "8px 12px",
+              borderRadius: 999,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Upload Activity File
             <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
           </label>
 
-          <button onClick={exportJson} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+          <button
+            onClick={exportJson}
+            style={{
+              border: "1px solid #E5E7EB",
+              background: "white",
+              color: "#6B7280",
+              padding: "8px 12px",
+              borderRadius: 999,
+            }}
+          >
             Export JSON
           </button>
         </div>
       </Card>
 
-      {isFormOpen && (
-        <Card>
-          <SectionLabel emoji="✏️" label={editingId ? "Edit Activity" : "Add Activity"} color="#2563EB" bg="#DBEAFE" />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>
-              Activity Name
-              <input style={inputStyle} value={draftActivity.activityName} onChange={(e) => updateField("activityName", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Category
-              <input style={inputStyle} value={draftActivity.category ?? ""} onChange={(e) => updateField("category", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Start Date
-              <input type="date" style={inputStyle} value={draftActivity.date ?? ""} onChange={(e) => updateField("date", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              End Date
-              <input type="date" style={inputStyle} value={draftActivity.endDate ?? ""} onChange={(e) => updateField("endDate", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Role
-              <input style={inputStyle} value={draftActivity.role ?? ""} onChange={(e) => updateField("role", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Note
-              <textarea style={{ ...inputStyle, minHeight: 90 }} value={draftActivity.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
-            </label>
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={saveActivity} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-                Save
-              </button>
-
-              <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </Card>
-      )}
-
       {activities.length > 0 ? (
         activities.map((a) => (
           <Card key={a.id}>
-            <SectionLabel emoji="🌟" label={a.activityName || "Untitled Activity"} color="#2563EB" bg="#DBEAFE" />
+            <SectionLabel
+              emoji="🌟"
+              label={a.activityName || "Untitled Activity"}
+              color="#2563EB"
+              bg="#DBEAFE"
+            />
 
             <InfoRow label="Category" value={a.category || "Not recorded"} />
             <InfoRow label="Date" value={fmtDate(a.date) || "Not recorded"} />
@@ -283,11 +272,29 @@ export default function ActivitiesPage() {
             <InfoRow label="Note" value={a.note || "Not recorded"} />
 
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#7F77DD", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+              <button
+                onClick={() => openEditForm(a)}
+                style={{
+                  border: "none",
+                  background: "#7F77DD",
+                  color: "white",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                }}
+              >
                 Edit
               </button>
 
-              <button onClick={() => deleteActivity(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
+              <button
+                onClick={() => deleteActivity(a.id)}
+                style={{
+                  border: "1px solid #FCA5A5",
+                  background: "white",
+                  color: "#DC2626",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                }}
+              >
                 Delete
               </button>
             </div>
@@ -318,6 +325,101 @@ export default function ActivitiesPage() {
           <EmptyState emoji="📎" message="No activity files uploaded yet." />
         )}
       </Card>
+
+      {isFormOpen && (
+        <Card>
+          <SectionLabel
+            emoji="✏️"
+            label={editingId ? "Edit Activity" : "Add Activity"}
+            color="#2563EB"
+            bg="#DBEAFE"
+          />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+            <label style={labelStyle}>
+              Activity Name
+              <input
+                style={inputStyle}
+                value={draftActivity.activityName}
+                onChange={(e) => updateField("activityName", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Category
+              <input
+                style={inputStyle}
+                value={draftActivity.category ?? ""}
+                onChange={(e) => updateField("category", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Start Date
+              <input
+                type="date"
+                style={inputStyle}
+                value={draftActivity.date ?? ""}
+                onChange={(e) => updateField("date", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              End Date
+              <input
+                type="date"
+                style={inputStyle}
+                value={draftActivity.endDate ?? ""}
+                onChange={(e) => updateField("endDate", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Role
+              <input
+                style={inputStyle}
+                value={draftActivity.role ?? ""}
+                onChange={(e) => updateField("role", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Note
+              <textarea
+                style={{ ...inputStyle, minHeight: 90 }}
+                value={draftActivity.note ?? ""}
+                onChange={(e) => updateField("note", e.target.value)}
+              />
+            </label>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveActivity} style={{ ...bottomButtonStyle, background: "#1D9E75" }}>
+                Save
+              </button>
+
+              <button
+                onClick={cancelForm}
+                style={{
+                  ...bottomButtonStyle,
+                  background: "white",
+                  color: "#6B7280",
+                  border: "1px solid #E5E7EB",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {!isFormOpen && (
+        <Card>
+          <button onClick={openAddForm} style={bottomButtonStyle}>
+            + Add Activity
+          </button>
+        </Card>
+      )}
     </div>
   );
 }

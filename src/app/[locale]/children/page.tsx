@@ -5,6 +5,7 @@ import { useApp } from "@/context/AppContext";
 import TopBar from "@/components/layout/TopBar";
 import { calcAge, getChildColor, getInitials } from "@/types";
 import { exportChildrenJson, importChildrenJson } from "@/lib/childStorage";
+import { exportSingleChildJson } from "@/lib/childStorage";
 
 export default function ChildrenPage() {
   const { children, t, locale } = useApp();
@@ -23,6 +24,29 @@ export default function ChildrenPage() {
             zIndex: 1,
           }}
         >
+          <select
+  defaultValue=""
+  onChange={(e) => {
+    if (!e.target.value) return;
+    exportSingleChildJson(e.target.value);
+    e.currentTarget.value = "";
+  }}
+  style={{
+    width: "100%",
+    marginBottom: 16,
+    padding: "10px",
+    borderRadius: 12,
+    border: "1px solid #E5E7EB",
+    fontSize: 14,
+  }}
+>
+  <option value="">Export selected child...</option>
+  {children.map((child) => (
+    <option key={child.id} value={child.id}>
+      {child.basicInfo.name} {child.basicInfo.lastname}
+    </option>
+  ))}
+</select>
           <button
             type="button"
             onClick={(e) => {

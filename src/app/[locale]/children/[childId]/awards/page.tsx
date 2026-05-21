@@ -28,6 +28,17 @@ const labelStyle = {
   color: "#6B7280",
 };
 
+const bottomButtonStyle = {
+  width: "100%",
+  border: "none",
+  background: "#BA7517",
+  color: "white",
+  padding: "12px 14px",
+  borderRadius: 999,
+  fontSize: 15,
+  fontWeight: 700,
+};
+
 function makeId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -89,12 +100,18 @@ export default function AwardsPage() {
     setDraftAward(makeEmptyAward());
     setEditingId(null);
     setIsFormOpen(true);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 50);
   }
 
   function openEditForm(award: Award) {
     setDraftAward({ ...award });
     setEditingId(award.id);
     setIsFormOpen(true);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 50);
   }
 
   function cancelForm() {
@@ -197,87 +214,57 @@ export default function AwardsPage() {
   }
 
   return (
-    <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div
+      style={{
+        padding: "14px 16px 120px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <SectionLabel emoji="🏆" label="Awards" color="#BA7517" bg="#FAEEDA" />
-
-          <button onClick={openAddForm} style={{ border: "none", background: "#BA7517", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-            + Add
-          </button>
-        </div>
+        <SectionLabel emoji="🏆" label="Awards" color="#BA7517" bg="#FAEEDA" />
 
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <label style={{ background: "#E1F5EE", color: "#1D9E75", padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13 }}>
+          <label
+            style={{
+              background: "#E1F5EE",
+              color: "#1D9E75",
+              padding: "8px 12px",
+              borderRadius: 999,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Upload Award File
             <input type="file" onChange={handleFileUpload} style={{ display: "none" }} />
           </label>
 
-          <button onClick={exportJson} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
+          <button
+            onClick={exportJson}
+            style={{
+              border: "1px solid #E5E7EB",
+              background: "white",
+              color: "#6B7280",
+              padding: "8px 12px",
+              borderRadius: 999,
+            }}
+          >
             Export JSON
           </button>
         </div>
       </Card>
 
-      {isFormOpen && (
-        <Card>
-          <SectionLabel emoji="✏️" label={editingId ? "Edit Award" : "Add Award"} color="#BA7517" bg="#FAEEDA" />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-            <label style={labelStyle}>
-              Award Name
-              <input style={inputStyle} value={draftAward.awardName} onChange={(e) => updateField("awardName", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Category
-              <input style={inputStyle} value={draftAward.category ?? ""} onChange={(e) => updateField("category", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Date
-              <input type="date" style={inputStyle} value={draftAward.date ?? ""} onChange={(e) => updateField("date", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Organization
-              <input style={inputStyle} value={draftAward.organization ?? ""} onChange={(e) => updateField("organization", e.target.value)} />
-            </label>
-
-            <label style={labelStyle}>
-              Level
-              <select style={inputStyle} value={draftAward.level ?? "school"} onChange={(e) => updateField("level", e.target.value)}>
-                <option value="school">School</option>
-                <option value="district">District</option>
-                <option value="province">Province</option>
-                <option value="national">National</option>
-                <option value="international">International</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-
-            <label style={labelStyle}>
-              Note
-              <textarea style={{ ...inputStyle, minHeight: 90 }} value={draftAward.note ?? ""} onChange={(e) => updateField("note", e.target.value)} />
-            </label>
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={saveAward} style={{ border: "none", background: "#1D9E75", color: "white", padding: "8px 12px", borderRadius: 999 }}>
-                Save
-              </button>
-
-              <button onClick={cancelForm} style={{ border: "1px solid #E5E7EB", background: "white", color: "#6B7280", padding: "8px 12px", borderRadius: 999 }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </Card>
-      )}
-
       {awards.length > 0 ? (
         awards.map((a) => (
           <Card key={a.id}>
-            <SectionLabel emoji="🏅" label={a.awardName || "Untitled Award"} color="#BA7517" bg="#FAEEDA" />
+            <SectionLabel
+              emoji="🏅"
+              label={a.awardName || "Untitled Award"}
+              color="#BA7517"
+              bg="#FAEEDA"
+            />
+
             <InfoRow label="Category" value={a.category || "Not recorded"} />
             <InfoRow label="Date" value={fmtDate(a.date) || "Not recorded"} />
             <InfoRow label="Organization" value={a.organization || "Not recorded"} />
@@ -285,11 +272,29 @@ export default function AwardsPage() {
             <InfoRow label="Note" value={a.note || "Not recorded"} />
 
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => openEditForm(a)} style={{ border: "none", background: "#BA7517", color: "white", padding: "8px 12px", borderRadius: 999 }}>
+              <button
+                onClick={() => openEditForm(a)}
+                style={{
+                  border: "none",
+                  background: "#BA7517",
+                  color: "white",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                }}
+              >
                 Edit
               </button>
 
-              <button onClick={() => deleteAward(a.id)} style={{ border: "1px solid #FCA5A5", background: "white", color: "#DC2626", padding: "8px 12px", borderRadius: 999 }}>
+              <button
+                onClick={() => deleteAward(a.id)}
+                style={{
+                  border: "1px solid #FCA5A5",
+                  background: "white",
+                  color: "#DC2626",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                }}
+              >
                 Delete
               </button>
             </div>
@@ -320,6 +325,107 @@ export default function AwardsPage() {
           <EmptyState emoji="📎" message="No award files uploaded yet." />
         )}
       </Card>
+
+      {isFormOpen && (
+        <Card>
+          <SectionLabel
+            emoji="✏️"
+            label={editingId ? "Edit Award" : "Add Award"}
+            color="#BA7517"
+            bg="#FAEEDA"
+          />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+            <label style={labelStyle}>
+              Award Name
+              <input
+                style={inputStyle}
+                value={draftAward.awardName}
+                onChange={(e) => updateField("awardName", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Category
+              <input
+                style={inputStyle}
+                value={draftAward.category ?? ""}
+                onChange={(e) => updateField("category", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Date
+              <input
+                type="date"
+                style={inputStyle}
+                value={draftAward.date ?? ""}
+                onChange={(e) => updateField("date", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Organization
+              <input
+                style={inputStyle}
+                value={draftAward.organization ?? ""}
+                onChange={(e) => updateField("organization", e.target.value)}
+              />
+            </label>
+
+            <label style={labelStyle}>
+              Level
+              <select
+                style={inputStyle}
+                value={draftAward.level ?? "school"}
+                onChange={(e) => updateField("level", e.target.value)}
+              >
+                <option value="school">School</option>
+                <option value="district">District</option>
+                <option value="province">Province</option>
+                <option value="national">National</option>
+                <option value="international">International</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+
+            <label style={labelStyle}>
+              Note
+              <textarea
+                style={{ ...inputStyle, minHeight: 90 }}
+                value={draftAward.note ?? ""}
+                onChange={(e) => updateField("note", e.target.value)}
+              />
+            </label>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveAward} style={{ ...bottomButtonStyle, background: "#1D9E75" }}>
+                Save
+              </button>
+
+              <button
+                onClick={cancelForm}
+                style={{
+                  ...bottomButtonStyle,
+                  background: "white",
+                  color: "#6B7280",
+                  border: "1px solid #E5E7EB",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {!isFormOpen && (
+        <Card>
+          <button onClick={openAddForm} style={bottomButtonStyle}>
+            + Add Award
+          </button>
+        </Card>
+      )}
     </div>
   );
 }

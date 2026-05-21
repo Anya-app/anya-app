@@ -82,6 +82,9 @@ export function deleteChild(childId: string): void {
   localStorage.setItem(CHILDREN_STORAGE_KEY, JSON.stringify(updatedAll));
 }
 
+/* =========================
+   🔵 Export ALL children
+========================= */
 export function exportChildrenJson(): void {
   if (typeof window === "undefined") return;
 
@@ -95,12 +98,48 @@ export function exportChildrenJson(): void {
   const a = document.createElement("a");
 
   a.href = url;
-  a.download = `anya-children-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
+  a.download = `anya-children-backup-${new Date()
+    .toISOString()
+    .slice(0, 10)}.json`;
 
+  a.click();
   URL.revokeObjectURL(url);
 }
 
+/* =========================
+   🟡 Export SINGLE child
+========================= */
+export function exportSingleChildJson(childId: string): void {
+  if (typeof window === "undefined") return;
+
+  const child = getChildById(childId);
+
+  if (!child) {
+    alert("Child not found");
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(child, null, 2)], {
+    type: "application/json",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  const safeName = child.basicInfo?.name || "child";
+
+  a.href = url;
+  a.download = `anya-child-${safeName}-${new Date()
+    .toISOString()
+    .slice(0, 10)}.json`;
+
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================
+   🟢 Import children
+========================= */
 export function importChildrenJson(file: File): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined") {
@@ -136,58 +175,3 @@ export function importChildrenJson(file: File): Promise<void> {
     reader.readAsText(file);
   });
 }
-export function exportSingleChildJson(childId: string): void {
-  if (typeof window === "undefined") return;
-
-  const child = getChildById(childId);
-
-  if (!child) {
-    alert("Child not found");
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(child, null, 2)], {
-    type: "application/json",
-  });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-
-  const safeName = child.basicInfo?.name || "child";
-
-  a.href = url;
-  a.download = `anya-child-${safeName}-${new Date()
-    .toISOString()
-    .slice(0, 10)}.json`;
-
-  a.click();
-  URL.revokeObjectURL(url);
-}
-export function exportSingleChildJson(childId: string): void {
-  if (typeof window === "undefined") return;
-
-  const child = getChildById(childId);
-
-  if (!child) {
-    alert("Child not found");
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(child, null, 2)], {
-    type: "application/json",
-  });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-
-  const safeName = child.basicInfo?.name || "child";
-
-  a.href = url;
-  a.download = `anya-child-${safeName}-${new Date()
-    .toISOString()
-    .slice(0, 10)}.json`;
-
-  a.click();
-  URL.revokeObjectURL(url);
-}
-

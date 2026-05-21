@@ -4,10 +4,7 @@ import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import TopBar from "@/components/layout/TopBar";
 import { calcAge, getChildColor, getInitials } from "@/types";
-import {
-  exportChildrenJson,
-  importChildrenJson,
-} from "@/lib/childStorage";
+import { exportChildrenJson, importChildrenJson } from "@/lib/childStorage";
 
 export default function ChildrenPage() {
   const { children, t, locale } = useApp();
@@ -17,10 +14,22 @@ export default function ChildrenPage() {
       <TopBar title={t.children.title} />
 
       <div style={{ padding: "16px" }}>
-        {/* ✅ Backup Buttons */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 16,
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
           <button
-            onClick={exportChildrenJson}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              exportChildrenJson();
+            }}
             style={{
               flex: 1,
               padding: "10px",
@@ -29,6 +38,7 @@ export default function ChildrenPage() {
               background: "#2563EB",
               color: "white",
               fontWeight: 600,
+              cursor: "pointer",
             }}
           >
             Export Backup
@@ -43,13 +53,17 @@ export default function ChildrenPage() {
               textAlign: "center",
               cursor: "pointer",
               fontWeight: 600,
+              display: "block",
             }}
           >
             Import Backup
             <input
               type="file"
               accept="application/json"
-              hidden
+              style={{ display: "none" }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -62,7 +76,6 @@ export default function ChildrenPage() {
           </label>
         </div>
 
-        {/* ✅ Children Grid */}
         {children.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
             <div style={{ fontSize: 56, marginBottom: 12 }}>👶</div>
@@ -85,6 +98,8 @@ export default function ChildrenPage() {
               display: "grid",
               gridTemplateColumns: "repeat(2, 1fr)",
               gap: 12,
+              position: "relative",
+              zIndex: 2,
             }}
           >
             {children.map((child, i) => {
@@ -101,9 +116,9 @@ export default function ChildrenPage() {
                   key={child.id}
                   href={`/${locale}/children/${child.id}/basic-info`}
                   style={{
-                    background: "#fff",
+                    background: "var(--color-background-primary, #fff)",
                     borderRadius: 16,
-                    border: "0.5px solid #e5e7eb",
+                    border: "0.5px solid var(--color-border-tertiary, #e5e7eb)",
                     padding: "18px 12px 14px",
                     textAlign: "center",
                     textDecoration: "none",
@@ -112,9 +127,24 @@ export default function ChildrenPage() {
                     flexDirection: "column",
                     alignItems: "center",
                     gap: 8,
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                    transition: "transform .15s, box-shadow .15s",
+                    position: "relative",
+                    zIndex: 3,
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.transform =
+                      "translateY(-2px)";
+                    (e.currentTarget as HTMLElement).style.boxShadow =
+                      "0 4px 16px rgba(0,0,0,0.10)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.transform = "";
+                    (e.currentTarget as HTMLElement).style.boxShadow =
+                      "0 1px 4px rgba(0,0,0,0.06)";
                   }}
                 >
-                  {/* Avatar */}
                   <div
                     style={{
                       width: 64,
@@ -128,12 +158,12 @@ export default function ChildrenPage() {
                       fontSize: 22,
                       fontWeight: 800,
                       color: color.text,
+                      letterSpacing: -1,
                     }}
                   >
                     {initials}
                   </div>
 
-                  {/* Name */}
                   <div
                     style={{
                       fontSize: 14,
@@ -147,13 +177,27 @@ export default function ChildrenPage() {
                     {child.basicInfo.name}
                   </div>
 
-                  {/* Subtitle */}
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>
-                    {child.basicInfo.nickname}
-                    {age !== null && ` · ${age} ${t.children.age}`}
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--color-text-secondary, #6b7280)",
+                    }}
+                  >
+                    {child.basicInfo.nickname &&
+                    child.basicInfo.nickname !== child.basicInfo.name
+                      ? child.basicInfo.nickname
+                      : ""}
+                    {age !== null ? (
+                      <>
+                        {child.basicInfo.nickname &&
+                        child.basicInfo.nickname !== child.basicInfo.name
+                          ? " · "
+                          : ""}
+                        {age} {t.children.age}
+                      </>
+                    ) : null}
                   </div>
 
-                  {/* Tags */}
                   <div
                     style={{
                       display: "flex",
@@ -171,6 +215,10 @@ export default function ChildrenPage() {
                           background: color.bg,
                           color: color.text,
                           fontWeight: 600,
+                          maxWidth: 120,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {school.schoolLevel}
@@ -218,7 +266,7 @@ export default function ChildrenPage() {
             textAlign: "center",
             marginTop: 16,
             fontSize: 12,
-            color: "#6b7280",
+            color: "var(--color-text-secondary, #6b7280)",
           }}
         >
           {children.length} / 12 children

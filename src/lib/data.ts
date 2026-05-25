@@ -1,7 +1,7 @@
 import type { AppData } from "@/types";
 
 export const mockAppData: AppData = {
-  version: "1.0.0",
+  version: "2.0.0",
   children: [
     {
       id: "child-001",
@@ -33,6 +33,16 @@ export const mockAppData: AppData = {
 
         motherName: "mom",
         fatherName: "dad",
+        mother: {
+          name: "mom",
+          names: { th: { fullName: "" }, en: { fullName: "mom" } },
+          altNames: [],
+        },
+        father: {
+          name: "dad",
+          names: { th: { fullName: "" }, en: { fullName: "dad" } },
+          altNames: [],
+        },
 
         paternalGrandfather: {
           name: "Grandpa",
@@ -141,6 +151,8 @@ export const mockAppData: AppData = {
         },
       ],
 
+      activityGoals: [],
+
       awards: [
         {
           id: "testaward-001-a",
@@ -176,6 +188,20 @@ export const mockAppData: AppData = {
         placeOfBirth: "test pet hospital",
         motherName: "Golden re",
         fatherName: "Golder L",
+        mother: {
+          name: "Golden re",
+          names: { th: { fullName: "" }, en: { fullName: "Golden re" } },
+          altNames: [],
+        },
+        father: {
+          name: "Golder L",
+          names: { th: { fullName: "" }, en: { fullName: "Golder L" } },
+          altNames: [],
+        },
+        paternalGrandfather: { name: "", names: { th: { fullName: "" }, en: { fullName: "" } }, altNames: [] },
+        paternalGrandmother: { name: "", names: { th: { fullName: "" }, en: { fullName: "" } }, altNames: [] },
+        maternalGrandfather: { name: "", names: { th: { fullName: "" }, en: { fullName: "" } }, altNames: [] },
+        maternalGrandmother: { name: "", names: { th: { fullName: "" }, en: { fullName: "" } }, altNames: [] },
         sister: [],
         brother: [],
       },
@@ -183,6 +209,7 @@ export const mockAppData: AppData = {
       health: {},
       schoolRecords: [],
       activities: [],
+      activityGoals: [],
       awards: [],
       calendarEvents: [],
     },

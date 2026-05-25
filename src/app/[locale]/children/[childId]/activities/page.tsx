@@ -69,6 +69,40 @@ function makeEmptyGoal(): ActivityGoal {
   };
 }
 
+function ensureUniqueGoalIds(goals: ActivityGoal[] = []): ActivityGoal[] {
+  const usedGoalIds = new Set<string>();
+
+  return goals.map((goal) => {
+    let goalId = goal.id?.trim() || makeId();
+
+    if (usedGoalIds.has(goalId)) {
+      goalId = makeId();
+    }
+    usedGoalIds.add(goalId);
+
+    const usedSubActivityIds = new Set<string>();
+    const subActivities = (goal.subActivities ?? []).map((subActivity) => {
+      let subActivityId = subActivity.id?.trim() || makeId();
+
+      if (usedSubActivityIds.has(subActivityId)) {
+        subActivityId = makeId();
+      }
+      usedSubActivityIds.add(subActivityId);
+
+      return {
+        ...subActivity,
+        id: subActivityId,
+      };
+    });
+
+    return {
+      ...goal,
+      id: goalId,
+      subActivities,
+    };
+  });
+}
+
 function fmtDate(iso?: string): string {
   if (!iso) return "-";
 
@@ -148,7 +182,25 @@ export default function ActivitiesPage() {
 
   useEffect(() => {
     const found = getChildById(childId);
-    if (found) setChild(found);
+    if (!found) return;
+
+    const originalGoals = found.activityGoals ?? [];
+    const fixedGoals = sortActivityGoalsNewestFirst(
+      ensureUniqueGoalIds(originalGoals)
+    );
+
+    const normalizedChild: Child = {
+      ...found,
+      activityGoals: fixedGoals,
+    };
+
+    setChild(normalizedChild);
+
+    // Repair previously saved goals with missing or duplicate IDs once,
+    // so Edit/Delete always affects only the selected goal.
+    if (JSON.stringify(originalGoals) !== JSON.stringify(fixedGoals)) {
+      saveChild(childId, normalizedChild);
+    }
   }, [childId]);
 
   const activities = useMemo(
@@ -285,14 +337,16 @@ export default function ActivitiesPage() {
   }
 
   function openEditGoalForm(goal: ActivityGoal) {
+    const safeGoal = ensureUniqueGoalIds([goal])[0];
+
     setDraftGoal({
-      ...goal,
+      ...safeGoal,
       subActivities:
-        goal.subActivities.length > 0
-          ? goal.subActivities.map((subActivity) => ({ ...subActivity }))
+        safeGoal.subActivities.length > 0
+          ? safeGoal.subActivities.map((subActivity) => ({ ...subActivity }))
           : [makeEmptySubActivity()],
     });
-    setEditingGoalId(goal.id);
+    setEditingGoalId(safeGoal.id);
     setIsGoalFormOpen(true);
   }
 
@@ -359,6 +413,8 @@ export default function ActivitiesPage() {
     }
 
     const currentChild: Child = child;
+    const currentGoals = ensureUniqueGoalIds(currentChild.activityGoals ?? []);
+
     const cleanedSubActivities = draftGoal.subActivities.filter(
       (subActivity) =>
         subActivity.title.trim() ||
@@ -368,23 +424,39 @@ export default function ActivitiesPage() {
         subActivity.note?.trim()
     );
 
-    const goalToSave: ActivityGoal = {
-      ...draftGoal,
-      updatedAt: new Date().toISOString(),
-      subActivities: cleanedSubActivities.sort(
-        (a, b) => dateTime(b.date) - dateTime(a.date)
-      ),
-    };
+    const goalToSave: ActivityGoal = ensureUniqueGoalIds([
+      {
+        ...draftGoal,
+        id: editingGoalId ?? draftGoal.id ?? makeId(),
+        updatedAt: new Date().toISOString(),
+        subActivities: cleanedSubActivities.sort(
+          (a, b) => dateTime(b.date) - dateTime(a.date)
+        ),
+      },
+    ])[0];
 
-    const existing = currentChild.activityGoals ?? [];
-    const updatedGoals = editingGoalId
-      ? existing.map((goal) => (goal.id === editingGoalId ? goalToSave : goal))
-      : [goalToSave, ...existing];
+    let didUpdateSelectedGoal = false;
+    const nextGoals = editingGoalId
+      ? currentGoals.map((goal) => {
+          if (!didUpdateSelectedGoal && goal.id === editingGoalId) {
+            didUpdateSelectedGoal = true;
+            return goalToSave;
+          }
+          return goal;
+        })
+      : [goalToSave, ...currentGoals];
+
+    const updatedGoals =
+      editingGoalId && !didUpdateSelectedGoal
+        ? [goalToSave, ...nextGoals]
+        : nextGoals;
 
     const updatedChild: Child = {
       ...currentChild,
       updatedAt: new Date().toISOString(),
-      activityGoals: sortActivityGoalsNewestFirst(updatedGoals),
+      activityGoals: sortActivityGoalsNewestFirst(
+        ensureUniqueGoalIds(updatedGoals)
+      ),
     };
 
     saveChild(childId, updatedChild);
@@ -394,19 +466,30 @@ export default function ActivitiesPage() {
 
   function deleteGoal(goalId: string) {
     if (!child) return;
-    if (!window.confirm("Delete this goal and all sub activities?")) return;
+
+    const selectedGoal = (child.activityGoals ?? []).find(
+      (goal) => goal.id === goalId
+    );
+    const goalName = selectedGoal?.goalName || "this goal";
+
+    if (!window.confirm(`Delete only "${goalName}"?`)) return;
 
     const currentChild: Child = child;
+    const currentGoals = ensureUniqueGoalIds(currentChild.activityGoals ?? []);
+    const updatedGoals = currentGoals.filter((goal) => goal.id !== goalId);
+
     const updatedChild: Child = {
       ...currentChild,
       updatedAt: new Date().toISOString(),
-      activityGoals: (currentChild.activityGoals ?? []).filter(
-        (goal) => goal.id !== goalId
-      ),
+      activityGoals: sortActivityGoalsNewestFirst(updatedGoals),
     };
 
     saveChild(childId, updatedChild);
     setChild(updatedChild);
+
+    if (editingGoalId === goalId) {
+      cancelGoalForm();
+    }
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -531,7 +614,7 @@ export default function ActivitiesPage() {
                     onClick={() => deleteGoal(goal.id)}
                     style={smallDeleteButtonStyle}
                   >
-                    Delete
+                    Delete This Goal
                   </button>
                 </div>
               </div>

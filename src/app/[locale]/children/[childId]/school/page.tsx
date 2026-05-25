@@ -121,6 +121,8 @@ export default function SchoolPage() {
   );
 
   function beginEdit() {
+    if (!child) return;
+
     const existing = sortSchoolRecordsNewestFirst(child.schoolRecords ?? []);
     setDraftRecords(existing.length > 0 ? existing : [makeEmptySchoolRecord()]);
     setIsEditing(true);
@@ -151,6 +153,10 @@ export default function SchoolPage() {
   }
 
   function saveEdit() {
+    if (!child) return;
+
+    const currentChild: Child = child;
+
     const cleanedRecords = draftRecords.filter((record) => {
       return Boolean(
         record.schoolName.trim() ||
@@ -164,7 +170,7 @@ export default function SchoolPage() {
 
     const sortedRecords = sortSchoolRecordsNewestFirst(cleanedRecords);
     const updatedChild: Child = {
-      ...child,
+      ...currentChild,
       updatedAt: new Date().toISOString(),
       schoolRecords: sortedRecords,
     };
@@ -176,22 +182,28 @@ export default function SchoolPage() {
   }
 
   function cancelEdit() {
+    if (!child) return;
+
     setDraftRecords(sortSchoolRecordsNewestFirst(child.schoolRecords ?? []));
     setIsEditing(false);
   }
 
   function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    if (!child) return;
+
+    const currentChild: Child = child;
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const inputElement = event.target;
     const reader = new FileReader();
 
     reader.onload = () => {
       const updatedChild: Child = {
-        ...child,
+        ...currentChild,
         updatedAt: new Date().toISOString(),
         attachments: [
-          ...(child.attachments ?? []),
+          ...(currentChild.attachments ?? []),
           {
             id: makeId(),
             section: "school",
@@ -205,7 +217,7 @@ export default function SchoolPage() {
 
       saveChild(childId, updatedChild);
       setChild(updatedChild);
-      event.target.value = "";
+      inputElement.value = "";
     };
 
     reader.readAsDataURL(file);

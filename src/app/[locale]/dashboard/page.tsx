@@ -67,6 +67,36 @@ function createChild(form: ChildForm): Child {
 
       motherName: "",
       fatherName: "",
+      father: {
+        name: "",
+        names: { th: { fullName: "" }, en: { fullName: "" } },
+        altNames: [],
+      },
+      mother: {
+        name: "",
+        names: { th: { fullName: "" }, en: { fullName: "" } },
+        altNames: [],
+      },
+      paternalGrandfather: {
+        name: "",
+        names: { th: { fullName: "" }, en: { fullName: "" } },
+        altNames: [],
+      },
+      paternalGrandmother: {
+        name: "",
+        names: { th: { fullName: "" }, en: { fullName: "" } },
+        altNames: [],
+      },
+      maternalGrandfather: {
+        name: "",
+        names: { th: { fullName: "" }, en: { fullName: "" } },
+        altNames: [],
+      },
+      maternalGrandmother: {
+        name: "",
+        names: { th: { fullName: "" }, en: { fullName: "" } },
+        altNames: [],
+      },
       grandfather: "",
       grandmother: "",
       parent: "",
@@ -84,6 +114,7 @@ function createChild(form: ChildForm): Child {
 
     schoolRecords: [],
     activities: [],
+    activityGoals: [],
     awards: [],
     calendarEvents: [],
     attachments: [],

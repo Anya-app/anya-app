@@ -42,22 +42,40 @@ export interface FamilyMember {
 // ============================================================
 
 export interface GrowthRecord {
+  id?: string;
   date: string;
-  weight: number;
-  height: number;
+  weight?: number;
+  height?: number;
+  clothingSize?: string;
+  chest?: number;
+  shoulder?: number;
+  arm?: number;
+  neck?: number;
+  waist?: number;
+  hip?: number;
+  thigh?: number;
+  legLength?: number;
+  other?: string;
 }
 
 export interface HealthMeasurements {
   weight?: number;
   height?: number;
+  clothingSize?: string;
+  chest?: number;
   shoulder?: number;
   upperArm?: number;
   arm?: number;
-  chest?: number;
+  neck?: number;
+  waist?: number;
   waistHip?: number;
-  leg?: number;
+  hip?: number;
+  thigh?: number;
   thighCircumference?: number;
+  leg?: number;
+  legLength?: number;
   shoeSize?: number;
+  other?: string;
 }
 
 export interface Health {

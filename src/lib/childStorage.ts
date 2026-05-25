@@ -208,7 +208,12 @@ export function normalizeChild(child: Child): Child {
     health: {
       congenitalDisease: child.health?.congenitalDisease ?? [],
       bodyMarks: child.health?.bodyMarks ?? [],
-      growthTrack: child.health?.growthTrack ?? [],
+      growthTrack: [...(child.health?.growthTrack ?? [])]
+        .map((record, index) => ({
+          ...record,
+          id: record.id ?? `growth-${child.id}-${record.date || index}`,
+        }))
+        .sort((a, b) => (a.date || "").localeCompare(b.date || "")),
       measurements: child.health?.measurements ?? {},
     },
     schoolRecords: sortSchoolRecordsNewestFirst(child.schoolRecords ?? []),

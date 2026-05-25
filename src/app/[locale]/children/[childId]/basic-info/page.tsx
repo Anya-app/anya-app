@@ -198,13 +198,18 @@ export default function BasicInfoPage() {
   }
 
   function save() {
-    saveChild(draft.id, draft);
+    if (!draft) return;
+
+    const savedDraft: Child = draft;
+
+    saveChild(savedDraft.id, savedDraft);
 
     setChildren((previous: Child[]) =>
-      previous.map((item) => (item.id === draft.id ? draft : item))
+      previous.map((item) => (item.id === savedDraft.id ? savedDraft : item))
     );
 
-    setChild(draft);
+    setChild(savedDraft);
+    setDraft(savedDraft);
     setIsEditing(false);
   }
 

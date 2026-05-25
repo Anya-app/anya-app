@@ -9,6 +9,8 @@ export type AwardLevel = "school" | "district" | "provincial" | "national" | "in
 export type GradeType = "midterm" | "final";
 export type CalendarEventSource = "school" | "activity" | "goal" | "other";
 export type LifeStatus = "alive" | "passed";
+export type ActivityGoalStatus = "planned" | "in_progress" | "completed" | "cancelled";
+export type SubActivityStatus = "planned" | "in_progress" | "completed" | "passed" | "not_passed";
 
 // ============================================================
 // NAME / FAMILY
@@ -27,7 +29,10 @@ export interface MultiLanguageNames {
 }
 
 export interface FamilyMember {
+  // Legacy field: kept so old data and old UI do not break.
   name?: string;
+  // New field: supports Thai / English / Chinese / other names.
+  names?: MultiLanguageNames;
   altNames?: LocalizedName[];
   status?: LifeStatus;
 }
@@ -63,7 +68,7 @@ export interface Health {
 }
 
 // ============================================================
-// SCHOOL
+// SCHOOL / EDUCATION HISTORY
 // ============================================================
 
 export interface SubjectScore {
@@ -151,9 +156,10 @@ export interface SchoolRecord {
 }
 
 // ============================================================
-// ACTIVITY / AWARD
+// ACTIVITY / GOAL / MILESTONE / AWARD
 // ============================================================
 
+// Existing activity timeline record: kept for old records and event-style activities.
 export interface Activity {
   id: string;
   activityName: string;
@@ -162,6 +168,29 @@ export interface Activity {
   endDate?: string;
   role?: string;
   note?: string;
+}
+
+export interface SubActivity {
+  id: string;
+  title: string;
+  date?: string;
+  endDate?: string;
+  status?: SubActivityStatus;
+  target?: string;
+  result?: string;
+  note?: string;
+}
+
+export interface ActivityGoal {
+  id: string;
+  goalName: string;
+  category?: string;
+  targetDate?: string;
+  status?: ActivityGoalStatus;
+  note?: string;
+  subActivities: SubActivity[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Award {
@@ -175,7 +204,7 @@ export interface Award {
 }
 
 // ============================================================
-// CALENDAR
+// CALENDAR / DASHBOARD TIMELINE
 // ============================================================
 
 export interface CalendarEvent {
@@ -208,27 +237,29 @@ export interface BasicInfo {
 
   dateOfBirth: string;
   placeOfBirth?: string;
+  gender?: "male" | "female" | "other";
 
+  // Legacy string fields: retained for current screens and old backups.
   motherName?: string;
   fatherName?: string;
-
   grandfather?: string;
   grandmother?: string;
 
-  paternalGrandfather?: FamilyMember;
-  paternalGrandmother?: FamilyMember;
-  maternalGrandfather?: FamilyMember;
-  maternalGrandmother?: FamilyMember;
+  // New structured family members. Each member supports names in 2+ languages.
+  father?: FamilyMember;
+  mother?: FamilyMember;
+  paternalGrandfather?: FamilyMember; // ปู่
+  paternalGrandmother?: FamilyMember; // ย่า
+  maternalGrandfather?: FamilyMember; // ตา
+  maternalGrandmother?: FamilyMember; // ยาย
 
   parent?: string;
   brother?: string[];
   sister?: string[];
-gender?: "male" | "female" | "other";
-  
 }
 
 // ============================================================
-// NEW STRUCTURE / ATTACHMENTS
+// LEGACY SIMPLE STRUCTURE / ATTACHMENTS
 // ============================================================
 
 export interface School {
@@ -269,11 +300,20 @@ export interface Child {
   updatedAt: string;
 
   health?: Health;
+
+  // Education history. The School page will sort the latest record first.
   schoolRecords?: SchoolRecord[];
+
+  // Existing event-style activity entries.
   activities?: Activity[];
+
+  // New goal -> sub activity/milestone structure.
+  activityGoals?: ActivityGoal[];
+
   awards?: Award[];
   calendarEvents?: CalendarEvent[];
 
+  // Retained for backwards compatibility.
   school?: School;
   activitiesNew?: Activities;
   awardsNew?: Awards;
@@ -316,4 +356,3 @@ export function calcAge(dob: string): number | null {
   const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
   return age < 0 ? 0 : age;
 }
-
